@@ -136,8 +136,8 @@ export default function NahratPage() {
 
       const isPDF = file.type === 'application/pdf';
       let processedFile = file;
-      let base64ForOCR: string;
-      let base64Original: string;
+      let base64ForOCR: string = '';
+      let base64Original: string = '';
 
       // Zpracování podle typu souboru
       if (isPDF) {

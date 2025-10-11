@@ -1,5 +1,61 @@
 # Changelog - Digi-Účtenka
 
+## 🔧 2025-10-11 (večer) - VERZE 1.1 - Opravy exportu a UX
+
+### ✅ Opravy Pohoda XML exportu
+- **OPRAVENO:** Nevalidní XML elementy `accountingMD` a `accountingD` odstraněny
+- **OPRAVENO:** Forma úhrady nyní používá správné kódy (`cash`, `draft`, `creditcard` místo českých názvů)
+- **VYLEPŠENO:** Inteligentní popis faktury v poli `<inv:text>` místo jen názvu dodavatele
+  - Příklad: "PEPCO Czech Republic - Kancelářské potřeby (4 položky)"
+  - Příklad: "Shell - Tankování a nákup (káva, sušenky)"
+
+### ✨ UX vylepšení
+- **NOVÉ:** Celý řádek v dashboardu je klikací (nejen tlačítko "Upravit")
+- **NOVÉ:** Zobrazení popisu pro Pohodu na ověřovací stránce PŘED exportem
+- **VYLEPŠENO:** Popis pro Pohodu umístěn pod položky pro lepší kontrolu
+
+### 🤖 AI vylepšení
+- **VYLEPŠENO:** Gemini OCR prompt pro lepší rozpoznání formy úhrady z textu na dokladu
+- **NOVÝ SOUBOR:** `lib/invoice-description.ts` - knihovna pro generování přirozených popisů
+- **VYLEPŠENO:** Jednoduché, přirozené popisy položek (ne technický výpis)
+
+### 📝 Změněné soubory
+- `lib/pohoda-export.ts` - oprava XML formátu, import sdílené funkce
+- `lib/gemini-ocr.ts` - lepší prompt pro formu úhrady
+- `lib/invoice-description.ts` - **NOVÝ** soubor pro popisy
+- `app/(dashboard)/page.tsx` - klikací řádky v tabulce
+- `app/(dashboard)/overit/[id]/page.tsx` - zobrazení popisu
+
+---
+
+## 🎉 2025-10-11 - VERZE 1.0 PRODUKČNÍ RELEASE
+
+### ✅ Co je hotové a funguje
+
+**Aplikace je 100% funkční a připravená k používání!**
+
+#### Hlavní funkce
+- ✅ Upload PDF až 25 MB (bez komprese)
+- ✅ Upload obrázků s automatickou kompresí
+- ✅ Hromadné zpracování až 10 souborů paralelně
+- ✅ OCR pomocí Google Gemini 2.5 Flash
+- ✅ Ověření a úprava rozpoznaných dat
+- ✅ AI generování předkontace
+- ✅ Firebase Storage pro soubory (5 GB/měsíc zdarma)
+- ✅ Firestore Database pro metadata
+- ✅ Google Authentication
+- ✅ Multi-firma podpora
+- ✅ Dashboard s filtry
+- ✅ Zabezpečení (Security Rules)
+- ✅ Firestore indexy pro rychlé queries
+
+#### Náklady
+- **Storage:** 5 GB ZDARMA (5000 PDF)
+- **100 dokladů:** ~$0.05 (5 Kč/měsíc)
+- **1000 dokladů:** ~$0.50 (50 Kč/měsíc)
+
+---
+
 ## 2025-10-11 (večer) - KRITICKÁ OPRAVA: Firestore limit + Firebase Storage
 
 ### 🔴 KRITICKÝ PROBLÉM VYŘEŠEN

@@ -6,6 +6,7 @@ import { doc, getDoc, updateDoc, serverTimestamp, collection, query, where, getD
 import { db } from '@/lib/firebase';
 import { validateICO, validateDIC, validateCastka, validateDatum } from '@/lib/validation';
 import { useAuth } from '@/hooks/useAuth';
+import { generateInvoiceDescription } from '@/lib/invoice-description';
 
 export default function OveritPage() {
   const params = useParams();
@@ -20,6 +21,8 @@ export default function OveritPage() {
   const [showPrevArrow, setShowPrevArrow] = useState(false);
   const [showNextArrow, setShowNextArrow] = useState(false);
   const [generatingPredkontace, setGeneratingPredkontace] = useState(false);
+  const [imageRotation, setImageRotation] = useState(0);
+  const [imageZoom, setImageZoom] = useState(1);
 
   useEffect(() => {
     loadDoklad();
@@ -575,6 +578,15 @@ export default function OveritPage() {
               </div>
             </div>
           )}
+
+          {/* Popis pro Pohodu - přes celou šířku */}
+          <div className="mt-3 pt-3 border-t">
+            <label className="block text-sm font-medium text-gray-700 mb-2">📄 Popis pro export do Pohody</label>
+            <div className="px-4 py-3 bg-blue-50 border-2 border-blue-300 rounded-lg">
+              <p className="text-base font-medium text-gray-800">{generateInvoiceDescription(doklad)}</p>
+              <p className="text-xs text-gray-600 mt-2">💡 Tento text se objeví v poli "Text" při importu do Pohody</p>
+            </div>
+          </div>
 
           {/* Info o firmě */}
           <div className="mt-3 pt-3 border-t">

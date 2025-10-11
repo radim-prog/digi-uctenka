@@ -9,6 +9,7 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.65.0",
     "@google/generative-ai": "^0.21.0",
     "autoprefixer": "^10.4.19",
     "browser-image-compression": "^2.0.2",

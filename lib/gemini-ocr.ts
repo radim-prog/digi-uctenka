@@ -78,7 +78,7 @@ JSON STRUKTURA (zkopíruj přesně):
     }
   ],
   "typ_dokladu": "uctenka",
-  "forma_uhrady": "karta",
+  "forma_uhrady": "hotove",
   "bankovni_ucet_dodavatele": null,
   "confidence": 0.95
 }
@@ -91,6 +91,12 @@ POZNÁMKY:
 - VŽDY vytěž VŠECHNY položky z dokladu do pole "polozky"
 - Pokud na dokladu nejsou žádné položky rozepsané, vrať prázdné pole []
 - Sumy položek MUSÍ dávat dohromady celkovou částku
+- **FORMA ÚHRADY**: Hledej na dokladu slova jako "HOTOVĚ", "V HOTOVOSTI", "KARTA", "PLATEBNÍ KARTA", "BANKOVNÍ PŘEVOD", "PŘÍKAZ K ÚHRADĚ"
+  - Pokud vidíš "HOTOVĚ" nebo "V HOTOVOSTI" → "hotove"
+  - Pokud vidíš "KARTA" nebo "PLATEBNÍ KARTA" → "karta"
+  - Pokud vidíš číslo účtu nebo "BANKOVNÍ PŘEVOD" → "prevod"
+  - Pokud není uvedeno, ale je číslo účtu dodavatele → "prevod"
+  - Pokud není nic uvedeno → null
 
 Vrať POUZE validní JSON, začínající { a končící }.`;
 

@@ -394,8 +394,19 @@ export default function DashboardPage() {
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
               {filteredDoklady.map((doklad) => (
-                <tr key={doklad.id} className="hover:bg-gray-50">
-                  <td className="px-6 py-4 whitespace-nowrap">
+                <tr
+                  key={doklad.id}
+                  className="hover:bg-gray-50 cursor-pointer"
+                  onClick={(e) => {
+                    // Pokud uživatel kliknul na checkbox nebo tlačítka, ignoruj
+                    if ((e.target as HTMLElement).closest('input, button, a')) {
+                      return;
+                    }
+                    // Jinak otevři detail
+                    window.location.href = `/overit/${doklad.id}`;
+                  }}
+                >
+                  <td className="px-6 py-4 whitespace-nowrap" onClick={(e) => e.stopPropagation()}>
                     <input
                       type="checkbox"
                       checked={selectedDoklady.includes(doklad.id)}
@@ -442,7 +453,7 @@ export default function DashboardPage() {
                        'Koncept'}
                     </span>
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                  <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium" onClick={(e) => e.stopPropagation()}>
                     <Link
                       href={`/overit/${doklad.id}`}
                       className="text-blue-600 hover:text-blue-900 mr-4"

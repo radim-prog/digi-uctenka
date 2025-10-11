@@ -1,4 +1,5 @@
 import { Doklad, Polozka } from './types';
+import { generateInvoiceDescription } from './invoice-description';
 
 /**
  * Generuje XML soubor pro import přijatých faktur do Pohody
@@ -55,24 +56,14 @@ function generateInvoiceXML(doklad: Doklad, dataId: number): string {
         <inv:dateDue>${doklad.datum_splatnosti}</inv:dateDue>`;
   }
 
+  // Vytvoř popisný text pro Pohodu
+  const textPopis = generateInvoiceDescription(doklad);
+
   xml += `
         <inv:accounting>
-          <typ:ids>${doklad.predkontace || '2Fv'}</typ:ids>`;
-
-  // Pokud jsou vyplněné účty MD a D, přidej je
-  if (doklad.predkontace_md) {
-    xml += `
-          <typ:accountingMD>${doklad.predkontace_md}</typ:accountingMD>`;
-  }
-
-  if (doklad.predkontace_d) {
-    xml += `
-          <typ:accountingD>${doklad.predkontace_d}</typ:accountingD>`;
-  }
-
-  xml += `
+          <typ:ids>${doklad.predkontace || '2Fv'}</typ:ids>
         </inv:accounting>
-        <inv:text>${doklad.dodavatel_nazev}</inv:text>
+        <inv:text>${textPopis}</inv:text>
         <inv:partnerIdentity>
           <typ:address>
             <typ:company>${doklad.dodavatel_nazev}</typ:company>`;
@@ -165,13 +156,13 @@ function generateInvoiceItemXML(polozka: Polozka, mena: string): string {
 function mapPaymentType(forma?: string): string {
   switch (forma) {
     case 'hotove':
-      return 'hotově';
+      return 'cash';
     case 'prevod':
-      return 'příkazem';
+      return 'draft';
     case 'karta':
-      return 'kartou';
+      return 'creditcard';
     default:
-      return 'příkazem';
+      return 'draft';
   }
 }
 

@@ -1,20 +1,23 @@
-# 📸 Digi-Účtenka - AI-Powered Receipt Scanner
+# 📸 Digi-Účtenka v1.0
 
-**Chytrá webová aplikace pro digitalizaci účtenek a faktur pomocí umělé inteligence Claude.**
+**Aplikace pro skenování a zpracování účtenek a faktur pomocí Google Gemini AI**
 
-Aplikace automaticky rozpozná text z účtenek, extrahuje důležité informace (dodavatel, částky, DPH) a uloží je do Google Sheets pro snadný import do účetních systémů jako Pohoda.
+Automaticky rozpozná text z PDF a obrázků, extrahuje data (dodavatel, částky, DPH, položky) a ukládá do Firebase. Podporuje hromadné zpracování, AI předkontaci a správu více firem.
 
 ---
 
-## ✨ Hlavní funkce
+## ✨ Hlavní funkce verze 1.0
 
-- 📱 **Mobilní web app** - vyfotíš účtenku přímo v prohlížeči
-- 🤖 **AI OCR** - Claude 4 Sonnet automaticky vytěží všechna data
-- ✅ **Ověření dat** - možnost manuálně zkontrolovat a opravit rozpoznaný text
-- 💾 **Google Drive** - automatické ukládání originálních obrázků
-- 📊 **Google Sheets** - export dat pro import do Pohody
-- 🏢 **Multi-firma** - podpora více firem/IČO
-- 🔐 **Zabezpečené** - přihlášení přes Google, každý vidí jen svoje data
+- 🤖 **AI OCR** - Google Gemini 2.5 Flash automaticky vytěží všechna data
+- 📄 **PDF až 25 MB** - Bez komprese, podporuje velké faktury
+- 📸 **Obrázky** - JPG, PNG s automatickou kompresí
+- 🔄 **Hromadné zpracování** - Až 10 souborů paralelně
+- ✅ **Ověření dat** - Manuální kontrola a oprava rozpoznaného textu
+- 🧮 **AI Předkontace** - Automatické generování účetní předkontace
+- 💾 **Firebase Storage** - Zabezpečené ukládání originálních souborů
+- 🏢 **Multi-firma** - Podpora více firem/IČO
+- 🔐 **Zabezpečené** - Přihlášení přes Google, každý vidí jen svoje data
+- 📊 **Dashboard** - Přehled všech dokladů s filtrací a vyhledáváním
 
 ---
 
