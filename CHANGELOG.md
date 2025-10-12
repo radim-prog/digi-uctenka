@@ -1,5 +1,41 @@
 # Changelog - Digi-Účtenka
 
+## 🪟 2025-10-12 - VERZE 1.3 - Windows podpora a jednoduché spouštění
+
+### ✨ Nové funkce
+- **NOVÉ:** `INSTALL.bat` - instalace jedním dvojklikem (Windows)
+- **NOVÉ:** `START.bat` - spuštění jedním dvojklikem (Windows)
+- **NOVÉ:** `NAVOD-WINDOWS-SERVER.md` - kompletní návod pro Windows
+- **VYLEPŠENO:** Odstranění Docker experimentálních funkcí z produkce
+
+### 🎯 Výhody Windows verze
+- ✅ Žádný příkazový řádek - jen dvojkliky
+- ✅ Funguje na Windows 10/11 i Windows Server
+- ✅ Ideální pro Google Cloud Windows VM
+- ✅ Automatická instalace závislostí
+- ✅ Jednoduché spuštění pro ne-programátory
+
+### 🔧 Technické změny
+- **UPRAVENO:** `next.config.js` - vráceno do produkčního stavu (bez standalone)
+- **ODSTRANĚNO:** `experimental.serverActions` (deprecated v Next.js 14)
+- **ZACHOVÁNO:** Docker soubory pro pokročilé uživatele
+
+### 📁 Nové soubory
+- `INSTALL.bat` - instalační skript pro Windows
+- `START.bat` - spouštěcí skript pro Windows
+- `NAVOD-WINDOWS-SERVER.md` - podrobný návod
+
+### 🚀 Jak použít na Windows
+```batch
+1. Nainstalovat Node.js z nodejs.org
+2. Zkopírovat složku na Windows počítač
+3. Dvojklik na INSTALL.bat
+4. Dvojklik na START.bat
+5. Otevřít http://localhost:3000
+```
+
+---
+
 ## 🐳 2025-10-12 - VERZE 1.2 - Docker podpora pro snadné nasazení
 
 ### ✨ Nové funkce
