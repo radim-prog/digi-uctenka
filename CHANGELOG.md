@@ -1,5 +1,44 @@
 # Changelog - Digi-Účtenka
 
+## 🐳 2025-10-12 - VERZE 1.2 - Docker podpora pro snadné nasazení
+
+### ✨ Nové funkce
+- **NOVÉ:** Plná Docker podpora - aplikaci lze nyní spustit jedním příkazem
+- **NOVÉ:** `Dockerfile` - multi-stage build pro optimalizovaný Docker image
+- **NOVÉ:** `docker-compose.yml` - jednoduchá konfigurace pro spuštění
+- **NOVÉ:** `start.sh` - bash skript pro jednoduché spuštění aplikace
+- **NOVÉ:** `DOCKER-NASAZENI.md` - kompletní návod v češtině
+
+### 🔧 Technické změny
+- **UPRAVENO:** `next.config.js` - přidán `output: 'standalone'` pro Docker build
+- **NOVÝ:** `.dockerignore` - optimalizace Docker buildu
+
+### 🎯 Výhody Docker verze
+- ✅ Funguje na Mac, Windows, Linux stejně
+- ✅ Žádná instalace Node.js, npm potřeba
+- ✅ Jeden příkaz pro spuštění: `./start.sh`
+- ✅ Snadné nasazení na jakýkoli server/VPS
+- ✅ Izolované prostředí
+- ✅ Automatický restart při pádu
+
+### 📁 Nové soubory
+- `Dockerfile` - definice Docker kontejneru
+- `.dockerignore` - výjimky pro Docker build
+- `docker-compose.yml` - Docker Compose konfigurace
+- `start.sh` - spouštěcí skript
+- `DOCKER-NASAZENI.md` - dokumentace
+
+### 🚀 Jak použít
+```bash
+# Zkopírovat celou složku na jakýkoli počítač
+# Nainstalovat Docker Desktop
+# Spustit:
+./start.sh
+# Otevřít: http://localhost:3000
+```
+
+---
+
 ## 🔧 2025-10-11 (večer) - VERZE 1.1 - Opravy exportu a UX
 
 ### ✅ Opravy Pohoda XML exportu
