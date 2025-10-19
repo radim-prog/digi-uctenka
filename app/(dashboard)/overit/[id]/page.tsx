@@ -23,6 +23,7 @@ export default function OveritPage() {
   const [generatingPredkontace, setGeneratingPredkontace] = useState(false);
   const [imageRotation, setImageRotation] = useState(0);
   const [imageZoom, setImageZoom] = useState(1);
+  const [viewMode, setViewMode] = useState<'auto' | 'pdf' | 'image'>('auto'); // Přepínání náhledu
 
   useEffect(() => {
     loadDoklad();
@@ -226,6 +227,18 @@ export default function OveritPage() {
           <div className="flex items-center justify-between mb-2">
             <h2 className="text-sm font-semibold text-gray-700">Naskenovaný doklad</h2>
             <div className="flex gap-1">
+              {/* Přepínač typu náhledu */}
+              <select
+                value={viewMode}
+                onChange={(e) => setViewMode(e.target.value as 'auto' | 'pdf' | 'image')}
+                className="px-2 py-1 text-xs border rounded bg-white"
+                title="Typ náhledu"
+              >
+                <option value="auto">Auto</option>
+                <option value="image">Obrázek</option>
+                <option value="pdf">PDF</option>
+              </select>
+
               <button
                 onClick={() => setImageRotation((prev) => (prev - 90) % 360)}
                 className="p-1 text-xs bg-gray-100 rounded hover:bg-gray-200"
@@ -264,40 +277,49 @@ export default function OveritPage() {
           </div>
 
           <div className="border rounded-lg overflow-auto bg-gray-50" style={{ height: 'calc(100% - 40px)' }}>
-            {doklad.imageBase64 ? (
-              doklad.imageMimeType === 'application/pdf' ? (
+            {(() => {
+              const imageUrl = doklad.imageBase64
+                ? `data:${doklad.imageMimeType || 'image/jpeg'};base64,${doklad.imageBase64}`
+                : doklad.originalImageUrl;
+
+              if (!imageUrl || imageUrl.trim() === '') {
+                return (
+                  <div className="w-full h-64 flex items-center justify-center">
+                    <p className="text-gray-500">Náhled není k dispozici</p>
+                  </div>
+                );
+              }
+
+              // Určení, jestli zobrazit jako PDF nebo obrázek
+              const isPDF = doklad.imageMimeType === 'application/pdf';
+              let shouldShowAsPDF = isPDF; // Default podle mime type
+
+              if (viewMode === 'pdf') {
+                shouldShowAsPDF = true; // Force PDF view
+              } else if (viewMode === 'image') {
+                shouldShowAsPDF = false; // Force image view
+              }
+              // viewMode === 'auto' používá default (isPDF)
+
+              return shouldShowAsPDF ? (
                 <iframe
-                  src={`data:application/pdf;base64,${doklad.imageBase64}`}
+                  src={imageUrl}
                   className="w-full h-full"
                   title="Doklad PDF"
                 />
               ) : (
                 <img
-                  src={`data:${doklad.imageMimeType || 'image/jpeg'};base64,${doklad.imageBase64}`}
+                  src={imageUrl}
                   alt="Doklad"
                   className="w-full h-auto"
+                  style={{
+                    transform: `rotate(${imageRotation}deg) scale(${imageZoom})`,
+                    transition: 'transform 0.3s',
+                    imageOrientation: 'from-image',
+                  }}
                 />
-              )
-            ) : doklad.originalImageUrl && doklad.originalImageUrl.trim() !== '' ? (
-              doklad.imageMimeType === 'application/pdf' ? (
-                <iframe
-                  src={doklad.originalImageUrl}
-                  className="w-full h-full"
-                  title="Doklad PDF"
-                />
-              ) : (
-                <img
-                  src={doklad.originalImageUrl}
-                  alt="Doklad"
-                  className="w-full h-auto"
-                  crossOrigin="use-credentials"
-                />
-              )
-            ) : (
-              <div className="w-full h-64 flex items-center justify-center">
-                <p className="text-gray-500">Náhled není k dispozici</p>
-              </div>
-            )}
+              );
+            })()}
           </div>
         </div>
 
@@ -318,9 +340,12 @@ export default function OveritPage() {
                   className="w-full px-2 py-1 text-sm border rounded"
                 >
                   <option value="faktura_prijata">Faktura přijatá</option>
+                  <option value="faktura_vydana">Faktura vydaná</option>
                   <option value="uctenka">Účtenka</option>
                   <option value="danovy_doklad">Daňový doklad</option>
+                  <option value="opravny_danovy_doklad">Opravný daňový doklad</option>
                   <option value="zalohova_faktura">Zálohová faktura</option>
+                  <option value="dobropis">Dobropis</option>
                 </select>
               </div>
 

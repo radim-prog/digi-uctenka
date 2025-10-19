@@ -22,7 +22,7 @@ export interface Firma {
   updatedAt: Timestamp;
 }
 
-export type TypDokladu = 'faktura_prijata' | 'uctenka' | 'danovy_doklad' | 'zalohova_faktura';
+export type TypDokladu = 'faktura_prijata' | 'faktura_vydana' | 'uctenka' | 'danovy_doklad' | 'opravny_danovy_doklad' | 'zalohova_faktura' | 'dobropis';
 export type FormaUhrady = 'hotove' | 'prevod' | 'karta' | 'jine';
 export type StatusDokladu = 'draft' | 'verified' | 'exported' | 'accounted';
 
@@ -155,4 +155,57 @@ export interface ExportResult {
   success: boolean;
   rowNumber?: number;
   error?: string;
+}
+
+// Bankovní transakce
+export type TransactionType = 'incoming' | 'outgoing';
+export type TransactionStatus = 'draft' | 'matched' | 'exported' | 'accounted';
+
+export interface BankTransaction {
+  id: string;
+  userId: string;
+  firmaId: string;
+
+  // Informace o transakci
+  datum: string; // YYYY-MM-DD
+  castka: number; // Kladná pro příchozí, záporná pro odchozí
+  typ: TransactionType;
+  variabilni_symbol?: string;
+  konstantni_symbol?: string;
+  specificke_symbol?: string;
+  nazev_protiuctu: string; // Název protistrany
+  cislo_protiuctu?: string; // Číslo účtu protistrany
+  popis: string; // Popis transakce z výpisu
+  poznamka?: string; // Uživatelská poznámka
+
+  // Párování s fakturou
+  parovana_faktura_id?: string; // ID dokladu, se kterým je spárováno
+  auto_matched?: boolean; // Automaticky spárováno podle VS
+
+  // Status
+  status: TransactionStatus;
+
+  // Metadata
+  vypisFileUrl?: string; // URL PDF výpisu
+  vypisFileName?: string;
+
+  createdAt: Timestamp;
+  matchedAt?: Timestamp;
+  exportedAt?: Timestamp;
+  accountedAt?: Timestamp;
+}
+
+export interface BankStatementData {
+  transactions: Array<{
+    datum: string;
+    castka: number;
+    typ: TransactionType;
+    variabilni_symbol?: string;
+    konstantni_symbol?: string;
+    specificke_symbol?: string;
+    nazev_protiuctu: string;
+    cislo_protiuctu?: string;
+    popis: string;
+  }>;
+  confidence?: number;
 }

@@ -122,7 +122,9 @@ export function validateAndFormatDate(dateStr: string | null): string {
         return dateStr; // Už je správný formát
       } else {
         // Převeď na YYYY-MM-DD
-        const [_, d, m, y] = match;
+        const d = match[1];
+        const m = match[2];
+        const y = match[3];
         return `${y}-${m}-${d}`;
       }
     }

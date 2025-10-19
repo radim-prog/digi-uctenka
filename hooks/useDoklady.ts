@@ -29,13 +29,17 @@ export function useDoklady() {
           ...doc.data(),
         })) as Doklad[];
 
+        console.log(`✓ Načteno ${dokladyData.length} dokladů z Firestore`);
         setDoklady(dokladyData);
         setLoading(false);
       },
       (error) => {
-        console.error('Firestore error:', error);
+        console.error('⚠️ Firestore dotaz selhal:', error);
+        console.error('⚠️ Error code:', error.code);
+        console.error('⚠️ Error message:', error.message);
         // Pokud selže index, zkus bez orderBy
         if (error.code === 'failed-precondition') {
+          console.log('🔄 Zkouším dotaz bez orderBy...');
           const simpleQ = query(
             collection(db, 'doklady'),
             where('userId', '==', user.uid)
@@ -46,6 +50,8 @@ export function useDoklady() {
               id: doc.id,
               ...doc.data(),
             })) as Doklad[];
+
+            console.log(`✓ Načteno ${dokladyData.length} dokladů (fallback bez orderBy)`);
 
             // Seřaď v paměti
             dokladyData.sort((a, b) => {

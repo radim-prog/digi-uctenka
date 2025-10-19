@@ -52,6 +52,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             <Link href="/firmy" className="text-gray-600 hover:text-gray-900">
               Firmy
             </Link>
+            <Link href="/bankovni-vypisy" className="text-gray-600 hover:text-gray-900">
+              Bankovní výpisy
+            </Link>
             <Link href="/nahrat" className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700">
               + Nahrát doklad
             </Link>

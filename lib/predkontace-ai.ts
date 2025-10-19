@@ -31,11 +31,17 @@ PRAVIDLA PRO PŘEDKONTACI:
 
 1. **predkontace** (Číselná řada):
    - Přijatá faktura (má IČO dodavatele, datum splatnosti) = "3Fv"
+   - Vydaná faktura (my jsme dodavatel) = "1Fv"
    - Účtenka/běžný nákup = "UD"
    - Daňový doklad = "DD"
-   - Zálohová faktura = "ZF"
+   - Opravný daňový doklad = "ODD"
+   - Zálohová faktura (přijatá) = "3ZF"
+   - Zálohová faktura (vydaná) = "1ZF"
+   - Dobropis = "DB"
 
 2. **predkontace_md** (Účet MD - má dáti):
+
+   **Pro PŘIJATÉ faktury/náklady:**
    Podle TYPU NÁKUPU/SLUŽBY:
    - Pohonné hmoty (benzin, nafta, CNG) = "501"
    - Spotřební materiál (kancelářské potřeby, drobný materiál) = "501"
@@ -49,19 +55,63 @@ PRAVIDLA PRO PŘEDKONTACI:
    - Poradenství, konzultace, právní služby = "518"
    - Marketing, reklama, propagace = "518"
    - Software, licence = "518"
-   - Pokud nevíš = "321"
+   - Pokud nevíš = "501"
+
+   **Pro VYDANÉ faktury:**
+   - VŽDY = "311" (odběratelé - pohledávka)
 
 3. **predkontace_d** (Účet D - dal):
-   Podle FORMY ÚHRADY:
-   - Pokud "hotove" = "211" (pokladna)
-   - Pokud "karta" nebo "prevod" = "221" (bankovní účet)
-   - Pokud neznámá forma = "321"
+   **DŮLEŽITÉ**: Podle TYPU DOKLADU a FORMY ÚHRADY:
+
+   A) Pokud je to VYDANÁ FAKTURA:
+      - Účet tržeb podle typu (např. "601" tržby za vlastní výrobky, "602" tržby za služby)
+      - Typicky = "602" (tržby za služby)
+
+   B) Pokud je to PŘIJATÁ FAKTURA (má datum splatnosti, číslo faktury):
+      - VŽDY = "321" (dodavatelé - závazek, protože ještě není zaplaceno)
+      - Úhrada se účtuje později samostatně
+
+   C) Pokud je to ÚČTENKA nebo OKAMŽITÁ ÚHRADA (bez data splatnosti):
+      - Pokud "hotove" = "211" (pokladna)
+      - Pokud "karta" = "261" (peníze na cestě - pro platební karty)
+      - Pokud "prevod" = "221" (bankovní účet)
+      - Pokud neznámá forma = "221"
 
 Vrať POUZE validní JSON ve formátu:
+
+PŘÍKLAD 1 (přijatá faktura):
 {
   "predkontace": "3Fv",
+  "predkontace_md": "518",
+  "predkontace_d": "321"
+}
+
+PŘÍKLAD 2 (vydaná faktura):
+{
+  "predkontace": "1Fv",
+  "predkontace_md": "311",
+  "predkontace_d": "602"
+}
+
+PŘÍKLAD 3 (účtenka kartou):
+{
+  "predkontace": "UD",
   "predkontace_md": "501",
-  "predkontace_d": "221"
+  "predkontace_d": "261"
+}
+
+PŘÍKLAD 4 (účtenka hotově):
+{
+  "predkontace": "UD",
+  "predkontace_md": "512",
+  "predkontace_d": "211"
+}
+
+PŘÍKLAD 5 (dobropis):
+{
+  "predkontace": "DB",
+  "predkontace_md": "321",
+  "predkontace_d": "518"
 }
 
 Začni { a skonči }.`;

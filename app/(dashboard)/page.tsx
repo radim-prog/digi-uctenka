@@ -22,6 +22,19 @@ export default function DashboardPage() {
   // Archiv: accounted (zaúčtované)
   const archivDoklady = doklady.filter(d => d.status === 'accounted');
 
+  // Seskupení archivních dokladů po měsících
+  const archivByMonth = archivDoklady.reduce((acc, doklad) => {
+    const month = doklad.mesic_uctovani || 'Bez měsíce';
+    if (!acc[month]) {
+      acc[month] = [];
+    }
+    acc[month].push(doklad);
+    return acc;
+  }, {} as Record<string, typeof archivDoklady>);
+
+  // Seřazené měsíce (od nejnovějšího)
+  const sortedMonths = Object.keys(archivByMonth).sort().reverse();
+
   // Aktuální zobrazení
   const displayedDoklady = view === 'fronta' ? frontaDoklady : archivDoklady;
 
@@ -359,7 +372,102 @@ export default function DashboardPage() {
       </div>
 
       <div className="bg-white rounded-lg shadow overflow-hidden">
-        {filteredDoklady.length === 0 ? (
+        {view === 'archiv' && sortedMonths.length > 0 ? (
+          // ARCHIV - Zobrazení po měsících
+          <div className="divide-y divide-gray-300">
+            {sortedMonths.map((month) => {
+              const dokladyVMesici = archivByMonth[month];
+              const celkemZaMesic = dokladyVMesici.reduce((sum, d) => sum + d.celkova_castka, 0);
+
+              return (
+                <div key={month} className="p-4">
+                  {/* Záhlaví měsíce */}
+                  <div className="flex justify-between items-center mb-3 pb-2 border-b border-gray-200">
+                    <h3 className="text-lg font-bold text-gray-900">
+                      📅 {month === 'Bez měsíce' ? month : new Date(month + '-01').toLocaleDateString('cs-CZ', { year: 'numeric', month: 'long' })}
+                    </h3>
+                    <div className="text-sm text-gray-600">
+                      {dokladyVMesici.length} dokladů • {celkemZaMesic.toLocaleString('cs-CZ')} Kč
+                    </div>
+                  </div>
+
+                  {/* Tabulka dokladů v měsíci */}
+                  <table className="min-w-full divide-y divide-gray-200">
+                    <thead className="bg-gray-50">
+                      <tr>
+                        <th className="px-6 py-3 text-left">
+                          <input
+                            type="checkbox"
+                            checked={dokladyVMesici.every(d => selectedDoklady.includes(d.id))}
+                            onChange={() => {
+                              const allSelected = dokladyVMesici.every(d => selectedDoklady.includes(d.id));
+                              if (allSelected) {
+                                setSelectedDoklady(prev => prev.filter(id => !dokladyVMesici.some(d => d.id === id)));
+                              } else {
+                                setSelectedDoklady(prev => [...new Set([...prev, ...dokladyVMesici.map(d => d.id)])]);
+                              }
+                            }}
+                            className="h-4 w-4 text-blue-600 rounded cursor-pointer"
+                          />
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Datum</th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Dodavatel</th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Číslo dokladu</th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Částka</th>
+                        <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Akce</th>
+                      </tr>
+                    </thead>
+                    <tbody className="bg-white divide-y divide-gray-200">
+                      {dokladyVMesici.map((doklad) => (
+                        <tr
+                          key={doklad.id}
+                          className="hover:bg-gray-50 cursor-pointer"
+                          onClick={(e) => {
+                            if ((e.target as HTMLElement).closest('input, button, a')) return;
+                            window.location.href = `/overit/${doklad.id}`;
+                          }}
+                        >
+                          <td className="px-6 py-4 whitespace-nowrap" onClick={(e) => e.stopPropagation()}>
+                            <input
+                              type="checkbox"
+                              checked={selectedDoklady.includes(doklad.id)}
+                              onChange={() => handleSelectDoklad(doklad.id)}
+                              className="h-4 w-4 text-blue-600 rounded cursor-pointer"
+                            />
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm">
+                            {new Date(doklad.datum_vystaveni).toLocaleDateString('cs-CZ')}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                            {doklad.dodavatel_nazev}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                            {doklad.cislo_dokladu}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 font-semibold">
+                            {doklad.celkova_castka.toLocaleString('cs-CZ')} {doklad.mena}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium" onClick={(e) => e.stopPropagation()}>
+                            <Link href={`/overit/${doklad.id}`} className="text-blue-600 hover:text-blue-900 mr-4">
+                              Upravit
+                            </Link>
+                            <button
+                              onClick={() => handleDeleteDoklady([doklad.id])}
+                              className="text-red-600 hover:text-red-900"
+                              title="Smazat doklad"
+                            >
+                              Smazat
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              );
+            })}
+          </div>
+        ) : filteredDoklady.length === 0 ? (
           <div className="text-center py-12">
             <h3 className="mt-2 text-sm font-medium text-gray-900">Žádné doklady</h3>
             <p className="mt-1 text-sm text-gray-500">Začni nahráním prvního dokladu.</p>
@@ -373,6 +481,7 @@ export default function DashboardPage() {
             </div>
           </div>
         ) : (
+          // FRONTA - Běžná tabulka
           <table className="min-w-full divide-y divide-gray-200">
             <thead className="bg-gray-50">
               <tr>

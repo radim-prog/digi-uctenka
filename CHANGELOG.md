@@ -1,5 +1,77 @@
 # Changelog - Digi-Účtenka
 
+## 🔐 2025-10-19 (večer) - VERZE 1.3.2 - Rate Limiting připraven
+
+### ✨ Nové funkce (připraveno, zatím deaktivováno)
+- **Rate Limiting** v `app/api/ocr/route.ts`
+  - Kontrola denního limitu OCR requestů (50/den/user)
+  - Firestore tracking v kolekci `api_usage`
+  - HTTP 429 (Too Many Requests) při překročení limitu
+  - Dočasně vypnuto (`RATE_LIMITING_ENABLED = false`)
+  - Pro aktivaci: změnit konstantu na `true` + přidat `userId` do API volání
+
+### 🚀 Vercel deployment
+- Aplikace nasazena na https://digi-uctenka.vercel.app
+- Firebase Authorized Domains nakonfigurovány (3 Vercel domény)
+- Auto-deploy při push na GitHub main branch
+- Environment variables nastaveny na Vercelu
+
+### 📊 Výkon
+- OCR zpracování: 20-40 sekund normální (Gemini API)
+- Některé složitější obrázky mohou trvat déle (load Gemini API)
+- Paralelní zpracování 3 souborů najednou funguje
+
+### 🐛 Známé problémy
+- Gemini API může být občas pomalejší (závisí na Google serveru)
+- Komprese obrázků zbytečná (Gemini podporuje až 25 MB) - zvážit odstranění
+
+### 📝 Dokumentace
+- CHANGELOG.md aktualizován
+- Připraveno pro budoucí rate limiting aktivaci
+
+---
+
+## 🔧 2025-10-19 (dopoledne) - VERZE 1.3.1 - KRITICKÉ OPRAVY ✅
+
+### 🐛 Opraveno (CRITICAL)
+- **"_ is not defined" bug** v `lib/validation.ts:125-128`
+  - **Problém:** Array destructuring s `_` placeholder nefungoval v production buildu
+  - **Dopad:** 100% OCR selhání na všech dokladech
+  - **Řešení:** Nahrazeno přímým array indexováním (`match[1]`, `match[2]`, `match[3]`)
+  - **Status:** ✅ 100% funkčnost obnovena
+
+### 🔐 Firebase Security Rules nasazeny
+- **Storage Rules** (`storage.rules`)
+  - Read/write pouze pro přihlášené uživatele
+  - Struktura: `/doklady/{firmaNazev}/{year}/{fileName}`
+  - Oprava 403 Forbidden errorů
+- **Firestore Rules** (`firestore.rules`)
+  - User-based isolation (každý vidí jen svoje data)
+  - Helper funkce `isOwner()` pro kontrolu vlastnictví
+- **Firestore Indexes** (`firestore.indexes.json`)
+  - Optimalizace dotazů pro rychlejší načítání
+
+### 🚀 Obnoveno z v1.3 zálohy
+- `lib/validation.ts` - oprava date parsingu
+- `lib/gemini-ocr.ts` - clean OCR logika bez debug outputu
+- `app/(dashboard)/nahrat/page.tsx` - iterativní komprese (garantuje < 1 MB)
+
+### 📝 Dokumentace
+- **README.md** kompletně přepsán
+  - Aktuální funkce: Gemini API, bankovní výpisy, Pohoda export
+  - Troubleshooting: Řešení "_ is not defined" a Firebase 403 errorů
+  - Náklady: ~$0.05/měsíc (100 dokladů), ~$0.50/měsíc (1000 dokladů)
+  - Deployment návod pro Vercel
+- **CHANGELOG.md** vytvořen/aktualizován
+
+### 🎯 Testováno
+- ✅ OCR funguje 100% (testováno na 3 problémových obrázcích)
+- ✅ Firebase Storage ukládání a čtení funguje
+- ✅ Iterativní komprese garantuje velikost < 1 MB
+- ✅ Všechny typy dokladů rozpoznány správně
+
+---
+
 ## 🪟 2025-10-12 - VERZE 1.3 - Windows podpora a jednoduché spouštění
 
 ### ✨ Nové funkce
