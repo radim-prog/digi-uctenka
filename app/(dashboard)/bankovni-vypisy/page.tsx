@@ -47,7 +47,10 @@ export default function BankovniVypisyPage() {
 
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.error || 'Chyba při zpracování');
+        const detailedError = errorData.details
+          ? `${errorData.error}\n\nDetail: ${errorData.details}`
+          : errorData.error || 'Chyba při zpracování';
+        throw new Error(detailedError);
       }
 
       const { data } = await response.json();

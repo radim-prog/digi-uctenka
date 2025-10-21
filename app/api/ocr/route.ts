@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { extractDokladData } from '@/lib/gemini-ocr';
+import { extractDokladData, retryMissingFields } from '@/lib/gemini-ocr';
 import { db } from '@/lib/firebase';
 import { doc, getDoc, setDoc, updateDoc, increment } from 'firebase/firestore';
 
@@ -82,16 +82,78 @@ export async function POST(request: NextRequest) {
 
     console.log(`✅ OCR API: Úspěšně extrahováno - ${extractedData.dodavatel_nazev}, částka: ${extractedData.celkova_castka}`);
 
+    // Kontrola povinných polí a retry pokud chybí
+    const missingFields: string[] = [];
+    if (!extractedData.datum_vystaveni) missingFields.push('datum_vystaveni');
+    if (!extractedData.datum_zdanitelneho_plneni) missingFields.push('datum_zdanitelneho_plneni');
+    if (!extractedData.cislo_dokladu || extractedData.cislo_dokladu === 'N/A') missingFields.push('cislo_dokladu');
+
+    if (missingFields.length > 0) {
+      console.log(`🔄 OCR API: Chybějící pole detekováno - ${missingFields.join(', ')} - spouštím retry OCR`);
+
+      try {
+        const retryData = await retryMissingFields(imageBase64, mimeType || 'image/jpeg', missingFields);
+
+        // Merge retry dat do původních dat (pouze pokud retry našlo hodnotu)
+        Object.assign(extractedData, retryData);
+
+        console.log(`✅ OCR API: Retry OCR úspěšný - doplněno: ${Object.keys(retryData).join(', ')}`);
+      } catch (retryError: any) {
+        console.warn(`⚠️ OCR API: Retry OCR selhal - ${retryError.message}`);
+        // Pokračujeme s původními daty i když retry selhal
+      }
+    }
+
     return NextResponse.json({
       success: true,
       data: extractedData,
     });
 
   } catch (error: any) {
-    console.error('OCR API Error:', error);
+    console.error('❌ OCR API Error:', error);
+
+    // Detailní error handling s konkrétními zprávami
+    let errorMessage = 'Neznámá chyba při OCR';
+    let errorDetails = error.message || 'Žádné detaily';
+    let statusCode = 500;
+
+    if (error.message?.includes('API_KEY') || error.message?.includes('API key')) {
+      errorMessage = 'Neplatný Gemini API klíč';
+      errorDetails = 'Zkontroluj GEMINI_API_KEY v .env.local';
+      statusCode = 401;
+    } else if (error.message?.includes('quota') || error.message?.includes('RESOURCE_EXHAUSTED')) {
+      errorMessage = 'Překročen denní limit Gemini API';
+      errorDetails = 'Zkus to za chvíli nebo upgradni Gemini plán';
+      statusCode = 429;
+    } else if (error.message?.includes('permission') || error.message?.includes('PERMISSION_DENIED')) {
+      errorMessage = 'Firebase: Nedostatečná oprávnění';
+      errorDetails = 'Zkontroluj Firebase Security Rules a přihlášení';
+      statusCode = 403;
+    } else if (error.message?.includes('network') || error.message?.includes('fetch')) {
+      errorMessage = 'Chyba sítě - zkontroluj připojení k internetu';
+      errorDetails = error.message;
+      statusCode = 503;
+    } else if (error.message?.includes('timeout')) {
+      errorMessage = 'Časový limit vypršel - soubor je příliš velký';
+      errorDetails = 'Zkus menší soubor nebo lepší kompresi';
+      statusCode = 408;
+    } else if (error.message?.includes('JSON')) {
+      errorMessage = 'Gemini AI vrátila nevalidní odpověď';
+      errorDetails = 'AI model pravděpodobně přetížen - zkus to znovu';
+      statusCode = 502;
+    } else {
+      errorMessage = 'Chyba při OCR zpracování';
+      errorDetails = error.message;
+    }
+
     return NextResponse.json(
-      { success: false, error: error.message || 'Chyba při OCR' },
-      { status: 500 }
+      {
+        success: false,
+        error: errorMessage,
+        details: errorDetails,
+        timestamp: new Date().toISOString(),
+      },
+      { status: statusCode }
     );
   }
 }

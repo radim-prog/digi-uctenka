@@ -17,7 +17,12 @@ KRITICKÉ PRAVIDLA:
 1. Vrať POUZE validní JSON, žádný jiný text
 2. Pokud pole nenajdeš na dokladu, vrať null (ne prázdný string)
 3. Částky vrať jako čísla bez měnového symbolu (použij tečku jako oddělovač desetinných míst)
-4. Data ve formátu YYYY-MM-DD
+4. Data ve formátu YYYY-MM-DD:
+   - Hledej VŠECHNY možné formáty na dokladu: DD.MM.YYYY, DD/MM/YYYY, DD-MM-YYYY, D.M.YYYY, D. M. YYYY
+   - Převeď VŽDY na YYYY-MM-DD
+   - Příklady: "21.10.2025" → "2025-10-21", "15/11/25" → "2025-11-15", "1. 12. 2024" → "2024-12-01"
+   - DŮLEŽITÉ: Rok 25 = 2025, rok 24 = 2024 (ne 1925!)
+   - Hledej klíčová slova: "Datum vystavení", "Vystaveno dne", "Splatnost", "DUZP", "Datum zdanitelného plnění"
 5. IČO musí být 8 číslic (string)
 6. DIČ formát: CZ + 8-10 číslic (string)
 7. Pokud není DUZP (datum zdanitelného plnění), použij datum vystavení
@@ -177,4 +182,99 @@ function cleanAndValidateData(data: any): DokladData {
   };
 
   return cleaned;
+}
+
+// Retry OCR pro chybějící pole
+export async function retryMissingFields(
+  imageBase64: string,
+  mimeType: string,
+  missingFields: string[]
+): Promise<Partial<DokladData>> {
+  if (!process.env.GEMINI_API_KEY) {
+    throw new Error('GEMINI_API_KEY není nastavený v environment variables');
+  }
+
+  const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+  const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
+
+  // Mapování polí na jejich popisky
+  const fieldDescriptions: Record<string, string> = {
+    datum_vystaveni: 'Datum vystavení, Vystaveno dne, Datum vytvoření, Date',
+    datum_splatnosti: 'Splatnost, Datum splatnosti, Splatno dne, Due date',
+    datum_zdanitelneho_plneni: 'DUZP, Datum zdanitelného plnění, Datum plnění, Tax point date',
+    cislo_dokladu: 'Číslo dokladu, Faktura č., Číslo faktury, Invoice no., Doklad č.',
+    dodavatel_ico: 'IČO, IČ, Identifikační číslo, IC, Company ID',
+    dodavatel_dic: 'DIČ, DIC, Daňové identifikační číslo, VAT ID, Tax ID',
+    variabilni_symbol: 'Variabilní symbol, VS, Variable symbol',
+  };
+
+  const prompt = `Analyzuj tento doklad a NAJDI POUZE TYTO CHYBĚJÍCÍ HODNOTY:
+
+${missingFields.map(field => `- ${field}: Hledej "${fieldDescriptions[field]}"`).join('\n')}
+
+DŮLEŽITÁ PRAVIDLA PRO DATUMY:
+- Hledej datum ve VŠECH možných formátech: DD.MM.YYYY, DD/MM/YYYY, DD-MM-YYYY, D.M.YYYY, D. M. YYYY
+- Převeď VŽDY na formát YYYY-MM-DD
+- Příklady: "21.10.2025" → "2025-10-21", "15/11/25" → "2025-11-15"
+- Rok 25 = 2025, rok 24 = 2024 (ne 1925!)
+- Pokud datum nenajdeš, vrať null
+
+DŮLEŽITÁ PRAVIDLA PRO IČO/DIČ:
+- IČO = přesně 8 číslic (string)
+- DIČ = CZ + 8-10 číslic (string)
+- Pokud nenajdeš, vrať null
+
+Vrať POUZE validní JSON s těmito poli. Příklad:
+{
+  ${missingFields.map(f => `"${f}": ${f.includes('datum') ? '"2025-10-21"' : f.includes('ico') || f.includes('dic') ? '"12345678"' : '"hodnota"'}`).join(',\n  ')}
+}`;
+
+  try {
+    const imageParts = [
+      {
+        inlineData: {
+          data: imageBase64,
+          mimeType: mimeType,
+        },
+      },
+    ];
+
+    const result = await model.generateContent([prompt, ...imageParts]);
+    const response = await result.response;
+    const responseText = response.text();
+
+    console.log('🔄 Retry OCR response:', responseText.substring(0, 200));
+
+    // Extrahuj JSON z odpovědi
+    const jsonMatch = responseText.match(/\{[\s\S]*\}/);
+    if (!jsonMatch) {
+      console.warn('⚠️ Retry OCR nevrátila validní JSON');
+      return {};
+    }
+
+    const parsedData = JSON.parse(jsonMatch[0]);
+
+    // Validace dat
+    const validated: Partial<DokladData> = {};
+    for (const field of missingFields) {
+      if (parsedData[field]) {
+        if (field.includes('datum')) {
+          validated[field as keyof DokladData] = validateAndFormatDate(parsedData[field]) as any;
+        } else if (field === 'dodavatel_ico') {
+          validated.dodavatel_ico = cleanICO(parsedData[field]);
+        } else if (field === 'dodavatel_dic') {
+          validated.dodavatel_dic = cleanDIC(parsedData[field]);
+        } else {
+          validated[field as keyof DokladData] = parsedData[field];
+        }
+      }
+    }
+
+    console.log('✅ Retry OCR validated data:', validated);
+    return validated;
+
+  } catch (error: any) {
+    console.error('❌ Retry OCR error:', error.message);
+    throw new Error(`Chyba při retry OCR: ${error.message}`);
+  }
 }

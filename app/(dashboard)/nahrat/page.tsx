@@ -7,7 +7,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
 import { db, storage } from '@/lib/firebase';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
-import imageCompression from 'browser-image-compression';
+import { convertImageToPDF, fileToBase64 } from '@/lib/image-to-pdf';
 
 interface FileProgress {
   file: File;
@@ -47,9 +47,9 @@ export default function NahratPage() {
         continue;
       }
 
-      // Gemini 2.5 Flash podporuje až 25 MB
-      if (file.size > 25 * 1024 * 1024) {
-        alert(`${file.name}: Soubor je příliš velký (max 25MB - limit Gemini API)`);
+      // Limit 20 MB (budeme konvertovat na PDF max 5 MB)
+      if (file.size > 20 * 1024 * 1024) {
+        alert(`${file.name}: Soubor je příliš velký (max 20 MB)`);
         continue;
       }
 
@@ -141,70 +141,40 @@ export default function NahratPage() {
 
       // Zpracování podle typu souboru
       if (isPDF) {
-        // Pro PDF: převeď na obrázek a zkomprimuj
+        // PDF - pošli přímo na Gemini (podporuje až 25 MB)
         updateFileProgress(index, { progress: 'Připravuji PDF...' });
 
-        // PDF - pošli přímo na Gemini bez komprese
-        // Gemini 2.5 Flash podporuje až 25 MB pro soubory
-        base64Original = await fileToBase64(file);
-        base64ForOCR = base64Original;
+        base64ForOCR = await fileToBase64(file);
+        base64Original = base64ForOCR;
 
         const fileSizeMB = (file.size / 1024 / 1024).toFixed(2);
-        console.log(`✓ PDF (${fileSizeMB} MB) - posílám přímo na Gemini`);
+        console.log(`📄 PDF (${fileSizeMB} MB) - posílám přímo na Gemini`);
+
+        // Pro uložení použij originál PDF
+        processedFile = file;
       } else {
-        // Obrázky - iterativní komprese dokud se nevejdeme pod 0.95 MB
-        updateFileProgress(index, { progress: 'Optimalizuji obrázek...' });
+        // Obrázky - konvertuj na PDF (cíl 5 MB)
+        updateFileProgress(index, { progress: 'Konvertuji na PDF...' });
 
-        // Pro uložení použij originál
-        base64Original = await fileToBase64(file);
+        try {
+          // Konverze obrázku na PDF s limitem 5 MB
+          const pdfBlob = await convertImageToPDF(file, 5);
+          const pdfFile = new File([pdfBlob], file.name.replace(/\.(jpg|jpeg|png|heic)$/i, '.pdf'), {
+            type: 'application/pdf',
+          });
 
-        let maxSizeMB = 0.7;
-        let maxWidthOrHeight = 1600;
-        let quality = 0.85;
-        let attempt = 0;
-        const MAX_ATTEMPTS = 5;
-        let success = false;
+          processedFile = pdfFile;
 
-        while (attempt < MAX_ATTEMPTS && !success) {
-          attempt++;
+          // Pro OCR použij PDF
+          base64ForOCR = await fileToBase64(pdfFile);
 
-          try {
-            const options = {
-              maxSizeMB: maxSizeMB,
-              maxWidthOrHeight: maxWidthOrHeight,
-              useWebWorker: true,
-              fileType: 'image/jpeg',
-              initialQuality: quality,
-            };
+          // Pro uložení také PDF
+          base64Original = base64ForOCR;
 
-            processedFile = await imageCompression(file, options);
-            base64ForOCR = await fileToBase64(processedFile);
-            const base64SizeInMB = base64ForOCR.length / 1024 / 1024;
-
-            console.log(`${file.name} (pokus ${attempt}): ${(file.size / 1024 / 1024).toFixed(2)}MB → ${(processedFile.size / 1024 / 1024).toFixed(2)}MB (base64: ${base64SizeInMB.toFixed(2)}MB, kvalita: ${quality.toFixed(2)})`);
-
-            if (base64SizeInMB <= 0.95) {
-              // Úspěch! Vejde se
-              success = true;
-              break;
-            }
-
-            // Neuspělo, zkus ještě agresivněji
-            maxSizeMB = Math.max(0.2, maxSizeMB * 0.7);
-            maxWidthOrHeight = Math.max(800, maxWidthOrHeight - 200);
-            quality = Math.max(0.5, quality - 0.1);
-
-          } catch (compressionError: any) {
-            console.warn(`Pokus ${attempt} selhal:`, compressionError);
-            // Zkus ještě jednou s nižší kvalitou
-            maxSizeMB = Math.max(0.2, maxSizeMB * 0.7);
-            maxWidthOrHeight = Math.max(800, maxWidthOrHeight - 200);
-            quality = Math.max(0.5, quality - 0.1);
-          }
-        }
-
-        if (!success) {
-          throw new Error(`Nepodařilo se zkomprimovat obrázek pod 0.95 MB po ${MAX_ATTEMPTS} pokusech`);
+          const pdfSizeMB = (pdfFile.size / 1024 / 1024).toFixed(2);
+          console.log(`✅ Obrázek → PDF: ${pdfSizeMB} MB`);
+        } catch (conversionError: any) {
+          throw new Error(`Chyba při konverzi na PDF: ${conversionError.message}`);
         }
       }
 
@@ -228,7 +198,10 @@ export default function NahratPage() {
 
       if (!ocrResponse.ok) {
         const errorData = await ocrResponse.json();
-        throw new Error(errorData.error || 'Chyba při OCR');
+        const detailedError = errorData.details
+          ? `${errorData.error}\n${errorData.details}`
+          : errorData.error || 'Chyba při OCR';
+        throw new Error(detailedError);
       }
 
       const { data: extractedData } = await ocrResponse.json();
@@ -359,18 +332,6 @@ export default function NahratPage() {
       const newQueue = [...prev];
       newQueue[index] = { ...newQueue[index], ...update };
       return newQueue;
-    });
-  };
-
-  const fileToBase64 = (file: File): Promise<string> => {
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onload = () => {
-        const base64 = reader.result as string;
-        resolve(base64.split(',')[1]);
-      };
-      reader.onerror = reject;
-      reader.readAsDataURL(file);
     });
   };
 

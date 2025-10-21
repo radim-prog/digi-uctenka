@@ -1,5 +1,181 @@
 # Changelog - Digi-Účtenka
 
+## 🔧 2025-10-21 (večer) - VERZE 1.4.1 - UI opravy + Vylepšená AI předkontace
+
+### 🐛 Opraveno
+
+**👥 Admin panel**
+- Přidáno tlačítko "👥 Admin" do navigace (viditelné jen pro adminy)
+- Odkaz: `/admin/users`
+- Fialové zvýraznění pro rozlišení od běžných odkazů
+
+**🏦 Bankovní výpisy - Detailní error handling**
+- Konkrétní chybové zprávy pro každý typ chyby
+- Zobrazení error details v uživatelském rozhraní
+- HTTP status kódy: 400, 401, 429, 502, 503
+- Lepší diagnostika problémů (PDF poškozený, API klíč, atd.)
+
+**📊 AI Předkontace - KOMPLETNÍ PŘEPSÁNÍ**
+- ✅ Přepsán podle správného českého podvojného účetnictví
+- ✅ Rozlišení mezi FAKTUROU (datum splatnosti) vs ÚČTENKOU (okamžitá úhrada)
+- ✅ Správné použití účtu 321 (dodavatelé) pro faktury
+- ✅ Správné použití 211/261/221 POUZE pro okamžité úhrady
+- ✅ Peníze na cestě (261) - POUZE pro platby kartou
+- ✅ Rozšířená účtová osnova:
+  - 131 (materiál na skladě)
+  - 502 (spotřeba energie)
+  - 504 (prodané zboží)
+  - 511 (opravy a udržování)
+  - 512 (cestovné)
+  - 513 (reprezentace)
+  - 042 (pořízení DHM)
+- ✅ Důsledné rozlišení reprezentace (513) vs cestovné (512)
+- ✅ Explicitní pravidla pro úhradu faktur (samostatný účetní případ)
+
+### 📝 Vylepšený prompt
+
+**Dříve (CHYBNÉ):**
+```
+Přijatá faktura:
+- MD: 518 (služby)
+- D: 321 (dodavatelé) ✅ nebo 211/221/261 ❌ (podle úhrady)
+```
+
+**Nyní (SPRÁVNĚ):**
+```
+Přijatá FAKTURA (má datum splatnosti):
+- MD: podle obsahu (501/502/512/518...)
+- D: VŽDY 321 (dodavatelé - vzniká závazek)
+- ❌ NEpoužívej 211/221/261 pokud má datum splatnosti!
+
+Úhrada faktury (samostatně):
+- MD: 321 (dodavatelé - snižujeme závazek)
+- D: 221 (bankovní účet - odchází peníze)
+
+ÚČTENKA (bez data splatnosti, zaplaceno okamžitě):
+- MD: podle obsahu (501/502/512/518...)
+- D: 211 (hotově) / 261 (kartou) / 221 (převodem)
+- ✅ Tady ANO používej platební účty!
+```
+
+### 🎓 Účetní pravidla v promptu
+
+Prompt nyní obsahuje:
+1. Kompletní výklad podvojného účetnictví
+2. Rozlišení MD vs D s vysvětlením
+3. Kritická pravidla (často chybují)
+4. Příklady všech scénářů:
+   - Přijatá faktura (nezaplacená)
+   - Účtenka hotově/kartou/převodem
+   - Vydaná faktura
+   - Úhrada faktury
+   - Dobropis
+
+### 📦 Změněné soubory
+- `app/(dashboard)/layout.tsx` - Přidán admin odkaz do navigace
+- `lib/predkontace-ai.ts` - Kompletně přepsaný prompt podle českého účetnictví
+- `app/api/bank-statement/route.ts` - Detailní error handling
+- `app/(dashboard)/bankovni-vypisy/page.tsx` - Zobrazení error details
+
+---
+
+## 🚀 2025-10-21 (odpoledne) - VERZE 1.4 - Automatické PDF konverze + Admin panel
+
+### ✨ Hlavní změny
+
+**🔄 Automatická konverze JPG/HEIC → PDF**
+- Všechny obrázky se automaticky konvertují na PDF (cíl 5 MB)
+- Lepší kvalita OCR (PDF lépe čitelné než komprimované JPG)
+- Limit nahrávání zvýšen na 20 MB (z původních 25 MB)
+- Nová knihovna: `lib/image-to-pdf.ts`
+- Iterativní komprese PDF pokud přesáhne 5 MB
+- Odstraněna stará JPG komprese (0.95 MB limit byl příliš agresivní)
+
+**🔁 Retry OCR pro chybějící pole**
+- Automatické 2. volání Gemini API pokud chybí důležitá pole
+- Detekce chybějících: datum_vystaveni, datum_zdanitelneho_plneni, cislo_dokladu
+- Targeted prompt pouze pro chybějící hodnoty
+- Nová funkce: `retryMissingFields()` v `lib/gemini-ocr.ts`
+- Náklady: max +$0.0026 za doklad (jen když je potřeba)
+
+**📝 Vylepšený OCR prompt pro datumy**
+- Explicitní podpora všech formátů: DD.MM.YYYY, DD/MM/YYYY, DD-MM-YYYY, D. M. YYYY
+- Příklady konverze přímo v promptu
+- Řešení problému s rokem (25 = 2025, ne 1925)
+- Hledání klíčových slov: "Datum vystavení", "Splatnost", "DUZP"
+
+**🛡️ Detailní error handling**
+- Konkrétní chybové zprávy pro každý typ chyby:
+  - API key invalid → "Zkontroluj GEMINI_API_KEY"
+  - Quota exceeded → "Zkus to za chvíli"
+  - Firebase permission → "Zkontroluj Security Rules"
+  - Network error → "Zkontroluj připojení"
+  - Timeout → "Soubor je příliš velký"
+- HTTP status kódy: 401, 403, 408, 429, 502, 503
+- Timestamp v error response
+
+**👥 Admin panel pro správu uživatelů**
+- Nová stránka: `/admin/users`
+- Whitelist systém (kolekce `allowed_users` v Firestore)
+- Přidávání/odebírání uživatelů přes UI
+- Role management: admin / user
+- Automatická detekce admin role v `useAuth` hooku
+- Init script: `npm run init-admin` (vytvoří radim@wikiporadce.cz + veronika@wikiporadce.cz)
+
+**🔐 Aktualizované Firestore Security Rules**
+- Whitelist kontrola pro všechny kolekce
+- Admin má plný přístup
+- Všichni whitelistovaní uživatelé vidí všechny firmy a doklady
+- Nová helper funkce: `isAllowedUser()`, `isAdmin()`
+
+### 💰 Náklady
+
+**Aktualizovaný výpočet (přesné ceny Gemini 2.5 Flash):**
+- Input: $0.30 / 1M tokenů
+- Output: $2.50 / 1M tokenů
+- **1 doklad:** ~$0.0026 (6 haléřů)
+- **1500 dokladů/měsíc:** $3.90 (90 Kč)
+- **Retry OCR:** max +$0.0026 (jen když potřeba)
+
+**Firebase Storage:**
+- 1500 dokladů × 5 MB = 7.5 GB
+- Free tier: 5 GB
+- Nad limit: 2.5 GB × $0.026 = $0.065/měsíc (1.5 Kč)
+
+**Celkem: ~$3.96/měsíc (91 Kč)**
+
+### 📦 Nové soubory
+- `lib/image-to-pdf.ts` - Konverze obrázků na PDF
+- `app/(dashboard)/admin/users/page.tsx` - Admin panel
+- `scripts/init-admin.js` - Init script pro admin účty
+
+### 🔧 Změněné soubory
+- `lib/gemini-ocr.ts` - Vylepšený prompt + retry funkce
+- `app/api/ocr/route.ts` - Retry logika + detailní errors
+- `app/(dashboard)/nahrat/page.tsx` - PDF konverze místo komprese
+- `hooks/useAuth.ts` - Admin role detection
+- `firestore.rules` - Whitelist + admin rules
+- `package.json` - Přidán script `init-admin`
+
+### 🚀 Deployment
+
+**1. Deploy Firestore rules:**
+```bash
+firebase deploy --only firestore
+```
+
+**2. Inicializuj admin účty:**
+```bash
+npm run init-admin
+```
+
+**3. Restart aplikace:**
+```bash
+npm run dev
+```
+
+---
+
 ## 🔐 2025-10-19 (večer) - VERZE 1.3.2 - Rate Limiting připraven
 
 ### ✨ Nové funkce (připraveno, zatím deaktivováno)

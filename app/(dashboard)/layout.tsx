@@ -7,7 +7,7 @@ import Link from 'next/link';
 import { useEffect } from 'react';
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
-  const { user, loading } = useAuth();
+  const { user, loading, isAdmin } = useAuth();
   const router = useRouter();
 
   useEffect(() => {
@@ -55,6 +55,11 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             <Link href="/bankovni-vypisy" className="text-gray-600 hover:text-gray-900">
               Bankovní výpisy
             </Link>
+            {isAdmin && (
+              <Link href="/admin/users" className="text-purple-600 hover:text-purple-900 font-medium">
+                👥 Admin
+              </Link>
+            )}
             <Link href="/nahrat" className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700">
               + Nahrát doklad
             </Link>

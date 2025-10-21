@@ -18,64 +18,104 @@ export async function generatePredkontace(doklad: Partial<Doklad>): Promise<Pred
   const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
   const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
 
-  const prompt = `Analyzuj tento český účetní doklad a urči správnou předkontaci pro účetní software Pohoda.
+  const prompt = `Jsi expert na české podvojné účetnictví a účtovou osnovu. Analyzuj tento účetní doklad a urči SPRÁVNOU předkontaci podle českých účetních pravidel.
 
 INFORMACE O DOKLADU:
 - Typ dokladu: ${doklad.typ_dokladu || 'neznámý'}
 - Dodavatel: ${doklad.dodavatel_nazev || 'neznámý'}
 - Celková částka: ${doklad.celkova_castka || 0} ${doklad.mena || 'CZK'}
 - Forma úhrady: ${doklad.forma_uhrady || 'neznámá'}
+- Datum splatnosti: ${doklad.datum_splatnosti || 'není'}
 - Položky: ${doklad.polozky?.map(p => p.nazev).join(', ') || 'žádné'}
 
-PRAVIDLA PRO PŘEDKONTACI:
+═══════════════════════════════════════════════════════════════════
+ZÁKLADNÍ PRAVIDLA PODVOJNÉHO ÚČETNICTVÍ (ČESKÁ ÚČTOVÁ OSNOVA)
+═══════════════════════════════════════════════════════════════════
 
-1. **predkontace** (Číselná řada):
-   - Přijatá faktura (má IČO dodavatele, datum splatnosti) = "3Fv"
-   - Vydaná faktura (my jsme dodavatel) = "1Fv"
-   - Účtenka/běžný nákup = "UD"
+1. **predkontace** (Číselná řada v Pohodě):
+   - Přijatá faktura = "3Fv"
+   - Vydaná faktura = "1Fv"
+   - Účtenka/pokladní doklad = "UD"
    - Daňový doklad = "DD"
    - Opravný daňový doklad = "ODD"
-   - Zálohová faktura (přijatá) = "3ZF"
-   - Zálohová faktura (vydaná) = "1ZF"
+   - Zálohová faktura přijatá = "3ZF"
+   - Zálohová faktura vydaná = "1ZF"
    - Dobropis = "DB"
 
-2. **predkontace_md** (Účet MD - má dáti):
+2. **MD (MÁ DÁTI)** - Co nabývá hodnoty / jaký náklad/majetek vzniká:
 
-   **Pro PŘIJATÉ faktury/náklady:**
-   Podle TYPU NÁKUPU/SLUŽBY:
-   - Pohonné hmoty (benzin, nafta, CNG) = "501"
-   - Spotřební materiál (kancelářské potřeby, drobný materiál) = "501"
-   - Nájemné = "518"
-   - Služby (opravy, servis, údržba) = "518"
-   - Drobný majetek, nábytek, vybavení = "501"
-   - Energie (elektřina, plyn, voda) = "502"
-   - Telekomunikace (telefon, internet, mobil) = "518"
-   - Cestovné = "512"
-   - Reprezentace (občerstvení, restaurant pro klienty) = "513"
-   - Poradenství, konzultace, právní služby = "518"
-   - Marketing, reklama, propagace = "518"
-   - Software, licence = "518"
-   - Pokud nevíš = "501"
+   **A) PŘIJATÉ FAKTURY (ještě nezaplacené):**
+   Podle OBSAHU NÁKUPU (co je předmětem faktury):
+   - Zboží na sklad = "131" (materiál na skladě)
+   - Pohonné hmoty = "501" (spotřeba materiálu)
+   - Kancelářské potřeby = "501" (spotřeba materiálu)
+   - Energie (elektřina, plyn, voda) = "502" (spotřeba energie)
+   - Prodané zboží (obchod) = "504" (prodané zboží)
+   - Cestovné (jízdenky, dálnice, parkování) = "512" (cestovné)
+   - Reprezentace (občerstvení klientů, dárky) = "513" (reprezentace)
+   - Nájemné = "518" (ostatní služby)
+   - Opravy a udržování = "511" (opravy a udržování)
+   - Telekomunikace (telefon, internet) = "518" (ostatní služby)
+   - Poradenství, právní služby = "518" (ostatní služby)
+   - Marketing, reklama = "518" (ostatní služby)
+   - Software, licence = "518" (ostatní služby)
+   - Školení, vzdělávání = "518" (ostatní služby)
+   - Dlouhodobý majetek (stroje, auta) = "042" (pořízení DHM)
+   - Drobný hmotný majetek = "501" (spotřeba materiálu)
 
-   **Pro VYDANÉ faktury:**
-   - VŽDY = "311" (odběratelé - pohledávka)
+   **B) VYDANÉ FAKTURY:**
+   - VŽDY = "311" (pohledávky - odběratelé)
 
-3. **predkontace_d** (Účet D - dal):
-   **DŮLEŽITÉ**: Podle TYPU DOKLADU a FORMY ÚHRADY:
+   **C) ÚČTENKY/OKAMŽITÁ ÚHRADA:**
+   - Stejné jako u přijatých faktur (podle obsahu)
 
-   A) Pokud je to VYDANÁ FAKTURA:
-      - Účet tržeb podle typu (např. "601" tržby za vlastní výrobky, "602" tržby za služby)
-      - Typicky = "602" (tržby za služby)
+3. **D (DAL)** - Co ztrácí hodnotu / odkud se to hradí:
 
-   B) Pokud je to PŘIJATÁ FAKTURA (má datum splatnosti, číslo faktury):
-      - VŽDY = "321" (dodavatelé - závazek, protože ještě není zaplaceno)
-      - Úhrada se účtuje později samostatně
+   **A) PŘIJATÉ FAKTURY (má datum splatnosti, ještě není zaplaceno):**
+   - VŽDY = "321" (závazky - dodavatelé)
+   - DŮLEŽITÉ: Úhrada faktury se účtuje POZDĚJI při platbě!
 
-   C) Pokud je to ÚČTENKA nebo OKAMŽITÁ ÚHRADA (bez data splatnosti):
-      - Pokud "hotove" = "211" (pokladna)
-      - Pokud "karta" = "261" (peníze na cestě - pro platební karty)
-      - Pokud "prevod" = "221" (bankovní účet)
-      - Pokud neznámá forma = "221"
+   **B) ÚČTENKY / OKAMŽITÁ ÚHRADA (bez data splatnosti, zaplaceno na místě):**
+   - "hotove" = "211" (pokladna)
+   - "karta" = "261" (peníze na cestě - bankovní den +1)
+   - "prevod" = "221" (bankovní účet)
+
+   **C) VYDANÉ FAKTURY:**
+   - Tržby za zboží = "604" (tržby za zboží)
+   - Tržby za služby = "602" (tržby za služby)
+   - Tržby za vlastní výrobky = "601" (tržby za vlastní výrobky)
+
+   **D) ÚHRADA PŘIJATÉ FAKTURY (samostatný účetní případ):**
+   MD: "321" (dodavatelé - snižujeme závazek)
+   D: "221" (bankovní účet - odchází peníze)
+
+   **E) ÚHRADA VYDANÉ FAKTURY (příjem peněz):**
+   MD: "221" (bankovní účet) nebo "211" (pokladna)
+   D: "311" (odběratelé - snižujeme pohledávku)
+
+═══════════════════════════════════════════════════════════════════
+KRITICKÁ PRAVIDLA (ČASTO CHYBUJÍ):
+═══════════════════════════════════════════════════════════════════
+
+1. **PENÍZE NA CESTĚ (261)**:
+   - Používej POUZE pro platby kartou!
+   - Karta znamená peníze dorazí na účet za 1-2 dny
+   - NEpoužívej pro hotovost nebo přímý bankovní převod!
+
+2. **PŘIJATÁ FAKTURA s datem splatnosti**:
+   - MD: (nákladový účet podle obsahu)
+   - D: "321" (dodavatelé - vzniká závazek)
+   - ❌ NEPOUŽÍVEJ 211/221/261 pokud má datum splatnosti!
+
+3. **ÚČTENKA bez data splatnosti**:
+   - MD: (nákladový účet podle obsahu)
+   - D: "211" (hotově) / "261" (kartou) / "221" (převodem)
+   - ✅ Tady ANO používej platební účty!
+
+4. **REPREZENTACE vs CESTOVNÉ**:
+   - Reprezentace (513): občerstvení KLIENTŮ, dárky pro partnery
+   - Cestovné (512): jízdenky, dálnice, parkování, ubytování
+   - ❌ Jídlo pro zaměstnance na cestě = 512 (ne 513)!
 
 Vrať POUZE validní JSON ve formátu:
 

@@ -1,12 +1,13 @@
 {
   "name": "digi-uctenka",
-  "version": "1.3.0",
+  "version": "1.4.1",
   "private": true,
   "scripts": {
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "init-admin": "node scripts/init-admin.js"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.65.0",

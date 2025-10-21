@@ -6,27 +6,51 @@ service cloud.firestore {
       return request.auth != null;
     }
 
-    function isOwner(userId) {
-      return isSignedIn() && request.auth.uid == userId;
+    function isAllowedUser() {
+      return isSignedIn() && exists(/databases/$(database)/documents/allowed_users/$(request.auth.token.email));
+    }
+
+    function isAdmin() {
+      return isAllowedUser() && get(/databases/$(database)/documents/allowed_users/$(request.auth.token.email)).data.role == 'admin';
+    }
+
+    // Allowed users collection (whitelist)
+    match /allowed_users/{email} {
+      // Číst může kdokoliv přihlášený (aby viděli seznam)
+      allow read: if isAllowedUser();
+      // Psát může jen admin
+      allow write: if isAdmin();
     }
 
     // Users collection
     match /users/{userId} {
-      allow read, write: if isOwner(userId);
+      allow read, write: if isAllowedUser();
     }
 
-    // Firmy collection
+    // Firmy collection - všichni whitelistovaní vidí všechny firmy
     match /firmy/{firmaId} {
-      allow read: if isOwner(resource.data.userId);
-      allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
-      allow update, delete: if isOwner(resource.data.userId);
+      allow read: if isAllowedUser();
+      allow create: if isAllowedUser() && request.resource.data.userId == request.auth.uid;
+      allow update, delete: if isAllowedUser();
     }
 
-    // Doklady collection
+    // Doklady collection - všichni whitelistovaní vidí všechny doklady
     match /doklady/{dokladId} {
-      allow read: if isOwner(resource.data.userId);
-      allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
-      allow update, delete: if isOwner(resource.data.userId);
+      allow read: if isAllowedUser();
+      allow create: if isAllowedUser() && request.resource.data.userId == request.auth.uid;
+      allow update, delete: if isAllowedUser();
+    }
+
+    // API usage tracking (pro rate limiting)
+    match /api_usage/{usageId} {
+      allow read, write: if isAllowedUser();
+    }
+
+    // Bank transactions
+    match /bank_transactions/{transactionId} {
+      allow read: if isAllowedUser();
+      allow create: if isAllowedUser() && request.resource.data.userId == request.auth.uid;
+      allow update, delete: if isAllowedUser();
     }
   }
 }
