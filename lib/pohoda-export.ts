@@ -7,9 +7,11 @@ import { generateInvoiceDescription } from './invoice-description';
  * ZAPNUTO (true):  Pro platby kartou se vytvoří 2 záznamy (MD náklad/D 261 + MD 221/D 261)
  * VYPNUTO (false): Pro platby kartou se vytvoří 1 záznam (MD náklad/D 261)
  *
- * ⚠️ VYPNI pokud Pohoda dělá párování automaticky sama! (jinak duplicity)
+ * ⚠️ VYPNUTO z bezpečnostních důvodů - nevíme jestli Pohoda páruje automaticky.
+ *    Pokud Pohoda NEpáruje, budeš muset párovat ručně v Pohodě.
+ *    Pokud zjistíš že chceš automatické párování, změň na true.
  */
-const AUTO_PAROVANI_261_NA_221 = true;
+const AUTO_PAROVANI_261_NA_221 = false;
 
 /**
  * Generuje XML soubor pro import přijatých faktur do Pohody
