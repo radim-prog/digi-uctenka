@@ -1,5 +1,84 @@
 # Changelog - Digi-Účtenka
 
+## 🚀 2025-10-21 (pozdě večer) - VERZE 1.4.3 - Automatické párování účtů + "NEVIM" předkontace
+
+### ✨ Nové funkce
+
+**🔄 Automatické párování "Peníze na cestě" (účet 261)**
+- Při platbě kartou se AUTOMATICKY vytvoří druhý účetní záznam
+- První záznam: MD náklad / D 261 (platba kartou)
+- Druhý záznam: MD 221 (banka) / D 261 (připsání za +2 dny)
+- XML export do Pohody obsahuje oba záznamy automaticky
+- Nemusíš ručně párovat peníze na cestě s bankou!
+
+**🤷 Předkontace "NEVIM"**
+- AI vrátí `predkontace: "NEVIM"` pokud si není jistá
+- Lepší přiznat nejistotu než zaúčtovat špatně
+- V Pohodě existuje číselná řada NEVIM právě pro tyto případy
+- Uživatel pak ručně doplní správnou předkontaci
+
+**📚 Firebase deployment návod**
+- Přidán `FIREBASE-DEPLOY.md` s kompletním návodem
+- Nasazení rules, indexů, inicializace admin účtů
+- Troubleshooting pro časté problémy
+
+### 🔧 Změněné soubory
+- `lib/pohoda-export.ts` - automatické párování 261 → 221
+- `lib/predkontace-ai.ts` - podpora pro "NEVIM"
+- `FIREBASE-DEPLOY.md` - nový soubor s návodem
+
+### 📋 Příklad Pohoda XML exportu (platba kartou):
+
+**Původně (1 záznam):**
+```xml
+<inv:invoice>
+  <!-- Nákup pohonných hmot kartou 2000 Kč -->
+  <inv:accounting>MD: 501 / D: 261</inv:accounting>
+</inv:invoice>
+```
+
+**Nyní (2 záznamy automaticky):**
+```xml
+<inv:invoice>
+  <!-- 1. Nákup pohonných hmot kartou 2000 Kč -->
+  <inv:accounting>MD: 501 / D: 261</inv:accounting>
+</inv:invoice>
+
+<int:intDoc>
+  <!-- 2. Připsání na banku za +2 dny -->
+  <int:accounting>MD: 221 / D: 261</int:accounting>
+  <int:date>2025-10-23</int:date> <!-- +2 dny -->
+</int:intDoc>
+```
+
+---
+
+## 📚 2025-10-21 (večer) - VERZE 1.4.2 - Knowledge base s oficiálními účetními pravidly
+
+### ✨ Nové soubory
+- `docs/UCETNI-PRAVIDLA.md` - Komplexní knowledge base (862 řádků)
+
+### 📝 Obsah knowledge base
+- Česká účtová osnova 2025 (třídy 0-7)
+- Detailní rozpis účtů: 211, 221, 261, 311, 321, 501-518, 601-604
+- Pravidla podvojného účetnictví (MD/DAL)
+- 5 typických účetních případů s příklady
+- Rozhodovací strom pro určení předkontace
+- Kritická pravidla (co se často chybuje)
+- Právní rámec: Vyhláška č. 500/2002 Sb.
+
+### 🔗 Oficiální zdroje
+- Portál POHODA - Směrná účtová osnova
+- Uctovani.net - Účtová osnova 2025
+- Stormware - Účtová osnova
+
+### 🔧 Vylepšený AI prompt
+- Kratší, optimalizovaný (ze 157 na 141 řádků)
+- Rozhodovací strom místo dlouhého seznamu
+- Odkaz na docs/UCETNI-PRAVIDLA.md
+
+---
+
 ## 🔧 2025-10-21 (večer) - VERZE 1.4.1 - UI opravy + Vylepšená AI předkontace
 
 ### 🐛 Opraveno

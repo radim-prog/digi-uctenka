@@ -138,6 +138,20 @@ PŘÍKLAD 3 (účtenka hotově):
   "predkontace_d": "211"
 }
 
+PŘÍKLAD 4 (nejasný případ):
+{
+  "predkontace": "NEVIM",
+  "predkontace_md": "",
+  "predkontace_d": ""
+}
+
+⚠️ DŮLEŽITÉ: Pokud si NEJSI JISTÝ správnou předkontací, vrať:
+- predkontace: "NEVIM"
+- predkontace_md: ""
+- predkontace_d: ""
+
+Lepší je přiznat nejistotu než zaúčtovat ŠPATNĚ!
+
 Začni { a skonči }.`;
 
   try {

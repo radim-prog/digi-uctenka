@@ -875,4 +875,44 @@ Tato knowledge base obsahuje **oficiální pravidla českého účetnictví** po
 4. MD účet podle **obsahu** nákupu (co je předmětem transakce)
 5. D účet podle **formy** úhrady (jak se platí)
 
+---
+
+## AUTOMATICKÉ PÁROVÁNÍ ÚČTŮ
+
+### Peníze na cestě (261) → Bankovní účet (221)
+
+Aplikace **automaticky** vytváří oba účetní záznamy pro platby kartou:
+
+**Scénář:** Nákup pohonných hmot kartou 2 000 Kč dne 21.10.2025
+
+**Den 1 (21.10.2025) - Platba kartou:**
+```
+MD 501 (Spotřeba materiálu) 2 000 Kč
+D  261 (Peníze na cestě)     2 000 Kč
+```
+
+**Den 3 (23.10.2025) - Připsání na bankovní účet (+2 dny):**
+```
+MD 221 (Bankovní účet)  2 000 Kč
+D  261 (Peníze na cestě) 2 000 Kč
+```
+
+### Výhody automatického párování:
+
+1. ✅ **Nemusíš ručně párovat** - aplikace to udělá za tebe
+2. ✅ **Účet 261 se automaticky uzavře** - žádné neuzavřené transakce
+3. ✅ **Správné datum připsání** - automaticky +2 dny (standardní bankovní den)
+4. ✅ **Pohoda XML export obsahuje oba záznamy** - import jedním kliknutím
+
+### Jak to funguje v praxi:
+
+1. Nahraješ účtenku: "Benzín 2 000 Kč, zaplaceno kartou"
+2. AI rozpozná: `forma_uhrady: "karta"` → `predkontace_d: "261"`
+3. Export do Pohody vytvoří **2 záznamy**:
+   - Záznam 1: Nákup (MD 501 / D 261)
+   - Záznam 2: Připsání (MD 221 / D 261) s datem +2 dny
+4. Import do Pohody - hotovo!
+
+---
+
 **Aktualizace:** 2025-10-21
