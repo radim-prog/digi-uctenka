@@ -2,6 +2,16 @@ import { Doklad, Polozka } from './types';
 import { generateInvoiceDescription } from './invoice-description';
 
 /**
+ * ⚙️ NASTAVENÍ: Automatické párování účtu 261 (Peníze na cestě) → 221 (Banka)
+ *
+ * ZAPNUTO (true):  Pro platby kartou se vytvoří 2 záznamy (MD náklad/D 261 + MD 221/D 261)
+ * VYPNUTO (false): Pro platby kartou se vytvoří 1 záznam (MD náklad/D 261)
+ *
+ * ⚠️ VYPNI pokud Pohoda dělá párování automaticky sama! (jinak duplicity)
+ */
+const AUTO_PAROVANI_261_NA_221 = true;
+
+/**
  * Generuje XML soubor pro import přijatých faktur do Pohody
  * Podle formátu https://www.stormware.cz/pohoda/xml/
  */
@@ -18,7 +28,7 @@ export function generatePohodaXML(doklady: Doklad[]): string {
     xml += generateInvoiceXML(doklad, itemId++);
 
     // Pokud je platba kartou (261 - peníze na cestě), automaticky přidej párování
-    if (doklad.predkontace_d === '261') {
+    if (AUTO_PAROVANI_261_NA_221 && doklad.predkontace_d === '261') {
       xml += generatePenizeNaCesteXML(doklad, itemId++);
     }
   });
