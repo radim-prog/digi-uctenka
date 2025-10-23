@@ -241,9 +241,22 @@ export default function NahratPage() {
       updateFileProgress(index, { progress: 'Ukládám soubor...' });
 
       // Upload do Firebase Storage
-      const fileName = `${extractedData.datum_vystaveni}_${extractedData.cislo_dokladu}.${isPDF ? 'pdf' : 'jpg'}`;
+      // Sanitizuj filename - odstraň nebezpečné znaky (/, \, :, atd.)
+      const safeCisloDokladu = extractedData.cislo_dokladu
+        .replace(/[\/\\:*?"<>|]/g, '_')  // Nahraď nebezpečné znaky
+        .substring(0, 50);  // Max 50 znaků
+
+      // Sanitizuj název firmy (mezery, s.r.o., a.s., atd.)
+      const safeFirmaNazev = activeFirma!.nazev
+        .replace(/[\/\\:*?"<>|]/g, '_')
+        .replace(/\s+/g, '_')  // Nahraď mezery za _
+        .replace(/\./g, '_');  // Nahraď tečky za _
+
+      const fileName = `${extractedData.datum_vystaveni}_${safeCisloDokladu}.${isPDF ? 'pdf' : 'jpg'}`;
       const year = new Date(extractedData.datum_vystaveni).getFullYear().toString();
-      const storagePath = `doklady/${activeFirma!.nazev}/${year}/${fileName}`;
+      const storagePath = `doklady/${safeFirmaNazev}/${year}/${fileName}`;
+
+      console.log('📁 Storage path:', storagePath);
 
       let downloadURL = '';
       let pdfPreviewURL = '';
@@ -273,7 +286,7 @@ export default function NahratPage() {
           try {
             const pdfBlob = await convertImageToPDF(processedFile, 5);
             const pdfFileName = fileName.replace(/\.jpg$/i, '_preview.pdf');
-            const pdfStoragePath = `doklady/${activeFirma!.nazev}/${year}/${pdfFileName}`;
+            const pdfStoragePath = `doklady/${safeFirmaNazev}/${year}/${pdfFileName}`;
             const pdfStorageRef = ref(storage, pdfStoragePath);
 
             await uploadBytes(pdfStorageRef, pdfBlob);
