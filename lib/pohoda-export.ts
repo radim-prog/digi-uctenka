@@ -79,9 +79,8 @@ function generateInvoiceXML(doklad: Doklad, dataId: number, datumZapisu: string)
 
   xml += `
         <inv:date>${doklad.datum_vystaveni}</inv:date>
-        <inv:dateAccounting>${datumZapisu}</inv:dateAccounting>
         <inv:dateTax>${doklad.datum_zdanitelneho_plneni}</inv:dateTax>
-        <inv:dateKHDPH>${datumZapisu}</inv:dateKHDPH>`;
+        <inv:dateAccounting>${datumZapisu}</inv:dateAccounting>`;
 
   if (doklad.datum_splatnosti) {
     xml += `
@@ -89,7 +88,7 @@ function generateInvoiceXML(doklad: Doklad, dataId: number, datumZapisu: string)
   }
 
   xml += `
-        <inv:dateApplicationVAT>${datumZapisu}</inv:dateApplicationVAT>`;
+        <inv:dateKHDPH>${datumZapisu}</inv:dateKHDPH>`;
 
   // Vytvoř popisný text pro Pohodu
   const textPopis = generateInvoiceDescription(doklad);
