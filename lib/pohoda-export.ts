@@ -55,20 +55,19 @@ function generateInvoiceXML(doklad: Doklad, dataId: number, datumZapisu: string)
           <typ:numberRequested>${doklad.cislo_dokladu}</typ:numberRequested>
         </inv:number>`;
 
-  // Variabilní symbol POUZE pro platby převodem (max 20 číslic)
-  // Pohoda akceptuje JEN číslice - odstraníme tečky, lomítka, mezery atd.
-  // Pokud není VS, Pohoda ho vytvoří automaticky z čísla dokladu
+  // ⚠️ VARIABILNÍ SYMBOL VYPNUT
+  // Pohoda automaticky vytvoří VS z čísla dokladu (odstraní nečíselné znaky)
+  // Pokud bys chtěl VS posílat, odkomentuj níže a nastav správně forma_uhrady
+  /*
   if (doklad.forma_uhrady === 'prevod' && doklad.variabilni_symbol) {
     const vs = doklad.variabilni_symbol
-      .replace(/\D/g, '')  // Odstraň všechny nečíselné znaky (regex \D = non-digit)
-      .substring(0, 20);   // Max 20 znaků pro Pohodu
-
-    // Pokud po odstranění zůstaly jen číslice, přidej VS
+      .replace(/\D/g, '')
+      .substring(0, 20);
     if (vs.length > 0) {
-      xml += `
-        <inv:symVar>${vs}</inv:symVar>`;
+      xml += `\n        <inv:symVar>${vs}</inv:symVar>`;
     }
   }
+  */
 
   if (doklad.konstantni_symbol && doklad.konstantni_symbol.trim() !== '') {
     xml += `
