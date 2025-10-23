@@ -94,7 +94,7 @@ function generateInvoiceXML(doklad: Doklad, dataId: number, datumZapisu: string)
 
   xml += `
         <inv:accounting>
-          <typ:ids>${doklad.predkontace || '2Fv'}</typ:ids>
+          <typ:accountingType>withoutAccounting</typ:accountingType>
         </inv:accounting>
         <inv:text>${textPopis}</inv:text>
         <inv:partnerIdentity>
