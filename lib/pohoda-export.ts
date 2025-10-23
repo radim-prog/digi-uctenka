@@ -94,6 +94,9 @@ function generateInvoiceXML(doklad: Doklad, dataId: number, datumZapisu: string)
         <inv:accounting>
           <typ:accountingType>withoutAccounting</typ:accountingType>
         </inv:accounting>
+        <inv:classificationVAT>
+          <typ:classificationVATType>inland</typ:classificationVATType>
+        </inv:classificationVAT>
         <inv:text>${textPopis}</inv:text>
         <inv:partnerIdentity>
           <typ:address>
