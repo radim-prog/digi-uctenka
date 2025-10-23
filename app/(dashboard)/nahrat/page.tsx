@@ -153,28 +153,46 @@ export default function NahratPage() {
         // Pro uložení použij originál PDF
         processedFile = file;
       } else {
-        // Obrázky - konvertuj na PDF (cíl 5 MB)
-        updateFileProgress(index, { progress: 'Konvertuji na PDF...' });
+        // Obrázky - komprimuj a pošli přímo (bez konverze na PDF)
+        updateFileProgress(index, { progress: 'Komprimuji obrázek...' });
 
         try {
-          // Konverze obrázku na PDF s limitem 5 MB
-          const pdfBlob = await convertImageToPDF(file, 5);
-          const pdfFile = new File([pdfBlob], file.name.replace(/\.(jpg|jpeg|png|heic)$/i, '.pdf'), {
-            type: 'application/pdf',
-          });
+          // Komprese obrázku (cíl < 5 MB)
+          let compressedFile = file;
+          const fileSizeMB = file.size / 1024 / 1024;
 
-          processedFile = pdfFile;
+          if (fileSizeMB > 5) {
+            // Iterativní komprese do 5 MB
+            const compression = await import('browser-image-compression');
+            let quality = 0.8;
+            let attempt = 0;
+            const maxAttempts = 5;
 
-          // Pro OCR použij PDF
-          base64ForOCR = await fileToBase64(pdfFile);
+            while (attempt < maxAttempts && compressedFile.size / 1024 / 1024 > 5) {
+              attempt++;
+              compressedFile = await compression.default(file, {
+                maxSizeMB: 5,
+                maxWidthOrHeight: 2048,
+                useWebWorker: true,
+                initialQuality: quality
+              });
+              quality = Math.max(0.5, quality - 0.15);
+              console.log(`📊 Komprese pokus ${attempt}: ${(compressedFile.size / 1024 / 1024).toFixed(2)} MB`);
+            }
+          }
 
-          // Pro uložení také PDF
+          processedFile = compressedFile;
+
+          // Pro OCR použij komprimovaný obrázek
+          base64ForOCR = await fileToBase64(compressedFile);
+
+          // Pro uložení také komprimovaný obrázek
           base64Original = base64ForOCR;
 
-          const pdfSizeMB = (pdfFile.size / 1024 / 1024).toFixed(2);
-          console.log(`✅ Obrázek → PDF: ${pdfSizeMB} MB`);
+          const finalSizeMB = (compressedFile.size / 1024 / 1024).toFixed(2);
+          console.log(`✅ Obrázek zkomprimován: ${finalSizeMB} MB`);
         } catch (conversionError: any) {
-          throw new Error(`Chyba při konverzi na PDF: ${conversionError.message}`);
+          throw new Error(`Chyba při kompresi: ${conversionError.message}`);
         }
       }
 
@@ -186,12 +204,20 @@ export default function NahratPage() {
 
       updateFileProgress(index, { progress: 'Analyzuji pomocí AI...' });
 
+      // Detekce správného mimeType
+      let finalMimeType = 'image/jpeg';
+      if (isPDF) {
+        finalMimeType = 'application/pdf';
+      } else if (processedFile.type) {
+        finalMimeType = processedFile.type;
+      }
+
       const ocrResponse = await fetch('/api/ocr', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           imageBase64: base64ForOCR,
-          mimeType: isPDF ? 'application/pdf' : 'image/jpeg'
+          mimeType: finalMimeType
         }),
         signal: abortControllerRef.current?.signal,
       });
