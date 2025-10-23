@@ -77,6 +77,9 @@ function generateInvoiceXML(doklad: Doklad, dataId: number, datumZapisu: string)
         <inv:symSpec>${doklad.specificke_symbol.trim()}</inv:symSpec>`;
   }
 
+  // Pokud NEMÁME datum_splatnosti (hotovost/karta), použij datum_vystaveni
+  const datumProKHDPH = doklad.datum_splatnosti || doklad.datum_vystaveni;
+
   xml += `
         <inv:date>${datumZapisu}</inv:date>
         <inv:dateTax>${datumZapisu}</inv:dateTax>
@@ -84,10 +87,12 @@ function generateInvoiceXML(doklad: Doklad, dataId: number, datumZapisu: string)
 
   if (doklad.datum_splatnosti) {
     xml += `
-        <inv:dateDue>${doklad.datum_splatnosti}</inv:dateDue>
-        <inv:dateKHDPH>${doklad.datum_splatnosti}</inv:dateKHDPH>
-        <inv:dateApplicationVAT>${doklad.datum_splatnosti}</inv:dateApplicationVAT>`;
+        <inv:dateDue>${doklad.datum_splatnosti}</inv:dateDue>`;
   }
+
+  xml += `
+        <inv:dateKHDPH>${datumProKHDPH}</inv:dateKHDPH>
+        <inv:dateApplicationVAT>${datumProKHDPH}</inv:dateApplicationVAT>`;
 
   // Vytvoř popisný text pro Pohodu
   const textPopis = generateInvoiceDescription(doklad);
