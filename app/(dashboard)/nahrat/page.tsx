@@ -332,7 +332,7 @@ export default function NahratPage() {
           cislo_dokladu: '',
           variabilni_symbol: '',
           datum_vystaveni: datumDnes,
-          datum_zdanitelneho_plneni: datumDnes,
+          datum_duzp: datumDnes,
           celkova_castka: 0,
           mena: 'CZK',
           typ_dokladu: 'uctenka',

@@ -51,7 +51,7 @@ export async function exportToGoogleSheets(doklad: any): Promise<ExportResult> {
 
       // Data
       doklad.datum_vystaveni,
-      doklad.datum_zdanitelneho_plneni,
+      doklad.datum_duzp,
       doklad.datum_splatnosti || '',
 
       // Částky

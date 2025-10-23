@@ -62,7 +62,7 @@ export interface Doklad {
   konstantni_symbol?: string;
   specificke_symbol?: string;
   datum_vystaveni: string; // YYYY-MM-DD
-  datum_zdanitelneho_plneni: string; // DUZP
+  datum_duzp: string; // DUZP
   datum_splatnosti?: string;
 
   // Částky
@@ -120,7 +120,7 @@ export interface DokladData {
   konstantni_symbol?: string;
   specificke_symbol?: string;
   datum_vystaveni: string;
-  datum_zdanitelneho_plneni: string;
+  datum_duzp: string;
   datum_splatnosti?: string;
   celkova_castka: number;
   mena: string;

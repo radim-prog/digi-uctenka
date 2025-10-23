@@ -115,9 +115,9 @@ export default function OveritPage() {
       newErrors.datum_vystaveni = datumVystaveniVal.error!;
     }
 
-    const duzpVal = validateDatum(doklad.datum_zdanitelneho_plneni);
+    const duzpVal = validateDatum(doklad.datum_duzp);
     if (!duzpVal.valid) {
-      newErrors.datum_zdanitelneho_plneni = duzpVal.error!;
+      newErrors.datum_duzp = duzpVal.error!;
     }
 
     const castkaVal = validateCastka(doklad.celkova_castka);
@@ -492,9 +492,9 @@ export default function OveritPage() {
                 <label className="block text-xs text-gray-600 mb-1">Datum zd.plnění *</label>
                 <input
                   type="date"
-                  value={doklad.datum_zdanitelneho_plneni}
-                  onChange={(e) => handleChange('datum_zdanitelneho_plneni', e.target.value)}
-                  className={`w-full px-2 py-1 text-sm border rounded ${errors.datum_zdanitelneho_plneni ? 'border-red-500' : ''}`}
+                  value={doklad.datum_duzp}
+                  onChange={(e) => handleChange('datum_duzp', e.target.value)}
+                  className={`w-full px-2 py-1 text-sm border rounded ${errors.datum_duzp ? 'border-red-500' : ''}`}
                 />
               </div>
 
