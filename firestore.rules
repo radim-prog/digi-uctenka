@@ -16,10 +16,10 @@ service cloud.firestore {
 
     // Allowed users collection (whitelist)
     match /allowed_users/{email} {
-      // Číst může kdokoliv přihlášený (aby viděli seznam)
-      allow read: if isAllowedUser();
-      // Psát může jen admin
-      allow write: if isAdmin();
+      // Číst může kdokoliv přihlášený (nutné pro isAllowedUser() funkci - jinak kruhová závislost)
+      allow read: if isSignedIn();
+      // Psát nemůže nikdo přes frontend (jen přes Firebase Admin SDK)
+      allow write: if false;
     }
 
     // Users collection
