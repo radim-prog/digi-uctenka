@@ -55,19 +55,16 @@ function generateInvoiceXML(doklad: Doklad, dataId: number, datumZapisu: string)
           <typ:numberRequested>${doklad.cislo_dokladu}</typ:numberRequested>
         </inv:number>`;
 
-  // ⚠️ VARIABILNÍ SYMBOL VYPNUT
-  // Pohoda automaticky vytvoří VS z čísla dokladu (odstraní nečíselné znaky)
-  // Pokud bys chtěl VS posílat, odkomentuj níže a nastav správně forma_uhrady
-  /*
-  if (doklad.forma_uhrady === 'prevod' && doklad.variabilni_symbol) {
-    const vs = doklad.variabilni_symbol
-      .replace(/\D/g, '')
-      .substring(0, 20);
-    if (vs.length > 0) {
-      xml += `\n        <inv:symVar>${vs}</inv:symVar>`;
-    }
+  // Variabilní symbol - generujeme z čísla dokladu (jen číslice)
+  // Důvod: Pohoda se snaží auto-generovat VS když není uveden a selhává na nečíselných znacích
+  const vs = doklad.cislo_dokladu
+    .replace(/\D/g, '')  // Odstraň všechny nečíselné znaky
+    .substring(0, 20);   // Max 20 znaků
+
+  if (vs.length > 0) {
+    xml += `
+        <inv:symVar>${vs}</inv:symVar>`;
   }
-  */
 
   if (doklad.konstantni_symbol && doklad.konstantni_symbol.trim() !== '') {
     xml += `
@@ -96,9 +93,6 @@ function generateInvoiceXML(doklad: Doklad, dataId: number, datumZapisu: string)
         <inv:accounting>
           <typ:accountingType>withoutAccounting</typ:accountingType>
         </inv:accounting>
-        <inv:classificationVAT>
-          <typ:classificationVATType>inland</typ:classificationVATType>
-        </inv:classificationVAT>
         <inv:text>${textPopis}</inv:text>
         <inv:partnerIdentity>
           <typ:address>
