@@ -63,7 +63,15 @@ export default function OveritPage() {
       const docSnap = await getDoc(docRef);
 
       if (docSnap.exists()) {
-        setDoklad({ id: docSnap.id, ...docSnap.data() });
+        const data = { id: docSnap.id, ...docSnap.data() };
+        console.log('📄 Načtený doklad:', {
+          id: data.id,
+          imageMimeType: data.imageMimeType,
+          hasImageBase64: !!data.imageBase64,
+          hasOriginalImageUrl: !!data.originalImageUrl,
+          originalImageUrl: data.originalImageUrl?.substring(0, 100),
+        });
+        setDoklad(data);
       }
     } catch (error) {
       console.error('Chyba při načítání:', error);
@@ -266,10 +274,10 @@ export default function OveritPage() {
           <div className="border rounded-lg overflow-auto bg-gray-50" style={{ height: 'calc(100% - 40px)' }}>
             {doklad.imageBase64 ? (
               doklad.imageMimeType === 'application/pdf' ? (
-                <iframe
+                <embed
                   src={`data:application/pdf;base64,${doklad.imageBase64}`}
+                  type="application/pdf"
                   className="w-full h-full"
-                  title="Doklad PDF"
                 />
               ) : (
                 <img
@@ -280,17 +288,17 @@ export default function OveritPage() {
               )
             ) : doklad.originalImageUrl && doklad.originalImageUrl.trim() !== '' ? (
               doklad.imageMimeType === 'application/pdf' ? (
-                <iframe
+                <embed
                   src={doklad.originalImageUrl}
+                  type="application/pdf"
                   className="w-full h-full"
-                  title="Doklad PDF"
                 />
               ) : (
                 <img
                   src={doklad.originalImageUrl}
                   alt="Doklad"
                   className="w-full h-auto"
-                  crossOrigin="use-credentials"
+                  crossOrigin="anonymous"
                 />
               )
             ) : (

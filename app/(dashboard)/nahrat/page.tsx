@@ -241,10 +241,20 @@ export default function NahratPage() {
 
       updateFileProgress(index, { progress: 'Ukládám soubor...' });
 
+      // Sanitizuj cislo_dokladu a firmaNazev - odstraň nebezpečné znaky pro Storage path
+      const safeCisloDokladu = extractedData.cislo_dokladu
+        .replace(/[\/\\:*?"<>|]/g, '_')  // Nahraď nebezpečné znaky
+        .substring(0, 50);  // Max 50 znaků
+
+      const safeFirmaNazev = activeFirma!.nazev
+        .replace(/[\/\\:*?"<>|]/g, '_')
+        .replace(/\s+/g, '_')  // Nahraď mezery za _
+        .replace(/\./g, '_');  // Nahraď tečky za _
+
       // Upload do Firebase Storage
-      const fileName = `${extractedData.datum_vystaveni}_${extractedData.cislo_dokladu}.${isPDF ? 'pdf' : 'jpg'}`;
+      const fileName = `${extractedData.datum_vystaveni}_${safeCisloDokladu}.${isPDF ? 'pdf' : 'jpg'}`;
       const year = new Date(extractedData.datum_vystaveni).getFullYear().toString();
-      const storagePath = `doklady/${activeFirma!.nazev}/${year}/${fileName}`;
+      const storagePath = `doklady/${safeFirmaNazev}/${year}/${fileName}`;
 
       let downloadURL = '';
 
