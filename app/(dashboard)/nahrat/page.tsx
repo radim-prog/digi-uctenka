@@ -246,6 +246,7 @@ export default function NahratPage() {
       const storagePath = `doklady/${activeFirma!.nazev}/${year}/${fileName}`;
 
       let downloadURL = '';
+      let pdfPreviewURL = '';
 
       try {
         // Convert base64 to Blob
@@ -258,12 +259,32 @@ export default function NahratPage() {
         const byteArray = new Uint8Array(byteNumbers);
         const blob = new Blob([byteArray], { type: isPDF ? 'application/pdf' : 'image/jpeg' });
 
-        // Upload to Storage
+        // Upload originál to Storage
         const storageRef = ref(storage, storagePath);
         await uploadBytes(storageRef, blob);
         downloadURL = await getDownloadURL(storageRef);
 
-        console.log('✓ Soubor nahrán do Firebase Storage:', downloadURL);
+        console.log('✓ Originál nahrán do Firebase Storage:', downloadURL);
+
+        // Pro JPG vytvoř PDF preview (pro lepší zobrazení)
+        if (!isPDF) {
+          updateFileProgress(index, { progress: 'Vytvářím PDF náhled...' });
+
+          try {
+            const pdfBlob = await convertImageToPDF(processedFile, 5);
+            const pdfFileName = fileName.replace(/\.jpg$/i, '_preview.pdf');
+            const pdfStoragePath = `doklady/${activeFirma!.nazev}/${year}/${pdfFileName}`;
+            const pdfStorageRef = ref(storage, pdfStoragePath);
+
+            await uploadBytes(pdfStorageRef, pdfBlob);
+            pdfPreviewURL = await getDownloadURL(pdfStorageRef);
+
+            console.log('✓ PDF náhled vytvořen:', pdfPreviewURL);
+          } catch (pdfError) {
+            console.warn('⚠️ PDF náhled se nepodařilo vytvořit:', pdfError);
+            // Pokračujeme bez PDF preview
+          }
+        }
       } catch (storageError: any) {
         console.error('Chyba při nahrávání do Storage:', storageError);
         // Pokračujeme i bez Storage
@@ -280,9 +301,11 @@ export default function NahratPage() {
         odberatel_dic: activeFirma!.dic,
         odberatel_adresa: activeFirma!.adresa,
         originalImageUrl: downloadURL || '',
+        pdfPreviewUrl: pdfPreviewURL || '', // PDF náhled pro JPG soubory
         storagePath: downloadURL ? storagePath : '',
         // NEUKLÁDÁME base64 do Firestore (limit 1 MB per field)
         // Soubor je uložen v Firebase Storage, odkaz je v originalImageUrl
+        // Pro JPG soubory je k dispozici také PDF preview v pdfPreviewUrl
         imageMimeType: isPDF ? 'application/pdf' : 'image/jpeg',
         status: 'draft',
         exportedToSheets: false,

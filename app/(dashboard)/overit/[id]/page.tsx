@@ -278,9 +278,22 @@ export default function OveritPage() {
 
           <div className="border rounded-lg overflow-auto bg-gray-50" style={{ height: 'calc(100% - 40px)' }}>
             {(() => {
-              const imageUrl = doklad.imageBase64
-                ? `data:${doklad.imageMimeType || 'image/jpeg'};base64,${doklad.imageBase64}`
-                : doklad.originalImageUrl;
+              // Preferuj PDF preview pro JPG soubory (lepší zobrazení)
+              const isPDF = doklad.imageMimeType === 'application/pdf';
+              const hasPdfPreview = doklad.pdfPreviewUrl && doklad.pdfPreviewUrl.trim() !== '';
+
+              // Vyber URL pro zobrazení
+              let imageUrl = '';
+              if (doklad.imageBase64) {
+                // Base64 (fallback)
+                imageUrl = `data:${doklad.imageMimeType || 'image/jpeg'};base64,${doklad.imageBase64}`;
+              } else if (hasPdfPreview && !isPDF) {
+                // JPG soubor s PDF preview - preferuj PDF preview
+                imageUrl = doklad.pdfPreviewUrl;
+              } else if (doklad.originalImageUrl) {
+                // Originál (PDF nebo JPG bez preview)
+                imageUrl = doklad.originalImageUrl;
+              }
 
               if (!imageUrl || imageUrl.trim() === '') {
                 return (
@@ -291,15 +304,14 @@ export default function OveritPage() {
               }
 
               // Určení, jestli zobrazit jako PDF nebo obrázek
-              const isPDF = doklad.imageMimeType === 'application/pdf';
-              let shouldShowAsPDF = isPDF; // Default podle mime type
+              let shouldShowAsPDF = isPDF || hasPdfPreview; // PDF nebo JPG s PDF preview
 
               if (viewMode === 'pdf') {
                 shouldShowAsPDF = true; // Force PDF view
               } else if (viewMode === 'image') {
                 shouldShowAsPDF = false; // Force image view
               }
-              // viewMode === 'auto' používá default (isPDF)
+              // viewMode === 'auto' používá default (isPDF || hasPdfPreview)
 
               return shouldShowAsPDF ? (
                 <iframe
@@ -317,6 +329,7 @@ export default function OveritPage() {
                     transition: 'transform 0.3s',
                     imageOrientation: 'from-image',
                   }}
+                  crossOrigin="anonymous"
                 />
               );
             })()}
