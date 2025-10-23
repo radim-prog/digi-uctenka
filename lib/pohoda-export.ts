@@ -2,25 +2,44 @@ import { Doklad, Polozka } from './types';
 import { generateInvoiceDescription } from './invoice-description';
 
 /**
+ * ⚙️ NASTAVENÍ: Automatické párování účtu 261 (Peníze na cestě) → 221 (Banka)
+ *
+ * ZAPNUTO (true):  Pro platby kartou se vytvoří 2 záznamy (MD náklad/D 261 + MD 221/D 261)
+ * VYPNUTO (false): Pro platby kartou se vytvoří 1 záznam (MD náklad/D 261)
+ *
+ * ⚠️ VYPNUTO z bezpečnostních důvodů - nevíme jestli Pohoda páruje automaticky.
+ *    Pokud Pohoda NEpáruje, budeš muset párovat ručně v Pohodě.
+ *    Pokud zjistíš že chceš automatické párování, změň na true.
+ */
+const AUTO_PAROVANI_261_NA_221 = false;
+
+/**
  * Generuje XML soubor pro import přijatých faktur do Pohody
  * Podle formátu https://www.stormware.cz/pohoda/xml/
  */
 export function generatePohodaXML(doklady: Doklad[]): string {
-  const datum = new Date().toISOString();
+  const dnesniDatum = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
   const ico = doklady[0]?.odberatel_ico || '00000000';
 
   let xml = `<?xml version="1.0" encoding="UTF-8"?>
-<dat:dataPack id="Import_faktur" ico="${ico}" application="Digi-Uctenka" version="2.0" note="Import faktur" xmlns:dat="http://www.stormware.cz/schema/version_2/data.xsd" xmlns:inv="http://www.stormware.cz/schema/version_2/invoice.xsd" xmlns:typ="http://www.stormware.cz/schema/version_2/type.xsd">`;
+<dat:dataPack id="Import_faktur" ico="${ico}" application="Digi-Uctenka" version="2.0" note="Import faktur" xmlns:dat="http://www.stormware.cz/schema/version_2/data.xsd" xmlns:inv="http://www.stormware.cz/schema/version_2/invoice.xsd" xmlns:int="http://www.stormware.cz/schema/version_2/intDoc.xsd" xmlns:typ="http://www.stormware.cz/schema/version_2/type.xsd">`;
 
-  doklady.forEach((doklad, index) => {
-    xml += generateInvoiceXML(doklad, index + 1);
+  let itemId = 1;
+  doklady.forEach((doklad) => {
+    // Přidej fakturu/účtenku
+    xml += generateInvoiceXML(doklad, itemId++, dnesniDatum);
+
+    // Pokud je platba kartou (261 - peníze na cestě), automaticky přidej párování
+    if (AUTO_PAROVANI_261_NA_221 && doklad.predkontace_d === '261') {
+      xml += generatePenizeNaCesteXML(doklad, itemId++);
+    }
   });
 
   xml += `\n</dat:dataPack>`;
   return xml;
 }
 
-function generateInvoiceXML(doklad: Doklad, dataId: number): string {
+function generateInvoiceXML(doklad: Doklad, dataId: number, datumZapisu: string): string {
   const sazbaDPHMapping = (sazba: number): string => {
     if (sazba === 21) return 'high';
     if (sazba === 12) return 'low';
@@ -34,8 +53,14 @@ function generateInvoiceXML(doklad: Doklad, dataId: number): string {
         <inv:invoiceType>receivedInvoice</inv:invoiceType>
         <inv:number>
           <typ:numberRequested>${doklad.cislo_dokladu}</typ:numberRequested>
-        </inv:number>
-        <inv:symVar>${doklad.variabilni_symbol}</inv:symVar>`;
+        </inv:number>`;
+
+  // Variabilní symbol POUZE pro platby převodem (max 20 znaků)
+  if (doklad.forma_uhrady === 'prevod' && doklad.variabilni_symbol) {
+    const vs = doklad.variabilni_symbol.substring(0, 20); // Max 20 znaků pro Pohodu
+    xml += `
+        <inv:symVar>${vs}</inv:symVar>`;
+  }
 
   if (doklad.konstantni_symbol) {
     xml += `
@@ -49,6 +74,7 @@ function generateInvoiceXML(doklad: Doklad, dataId: number): string {
 
   xml += `
         <inv:date>${doklad.datum_vystaveni}</inv:date>
+        <inv:dateAccounting>${datumZapisu}</inv:dateAccounting>
         <inv:dateTax>${doklad.datum_zdanitelneho_plneni}</inv:dateTax>`;
 
   if (doklad.datum_splatnosti) {
@@ -164,6 +190,62 @@ function mapPaymentType(forma?: string): string {
     default:
       return 'draft';
   }
+}
+
+/**
+ * Generuje XML pro automatické připsání peněz z účtu 261 (peníze na cestě) na účet 221 (banka)
+ * Toto se volá automaticky pro platby kartou
+ */
+function generatePenizeNaCesteXML(doklad: Doklad, dataId: number): string {
+  // Datum připsání = datum dokladu + 2 dny (standardní bankovní den)
+  const datumDokladu = new Date(doklad.datum_vystaveni);
+  const datumPripsani = new Date(datumDokladu);
+  datumPripsani.setDate(datumPripsani.getDate() + 2);
+  const datumPripsaniStr = datumPripsani.toISOString().split('T')[0];
+
+  const castka = doklad.celkova_castka || 0;
+  const popis = `Připsání platby kartou - ${doklad.dodavatel_nazev || 'doklad'} ${doklad.cislo_dokladu || ''}`.trim();
+
+  return `
+  <dat:dataPackItem id="${dataId}" version="2.0">
+    <int:intDoc version="2.0">
+      <int:intDocHeader>
+        <int:number>
+          <typ:numberRequested>PNC-${doklad.cislo_dokladu || dataId}</typ:numberRequested>
+        </int:number>
+        <int:date>${datumPripsaniStr}</int:date>
+        <int:text>${popis}</int:text>
+        <int:intNote>Automaticky vygenerováno - připsání platby kartou z účtu 261 na účet 221</int:intNote>
+        <int:accounting>
+          <typ:ids>VBU</typ:ids>
+        </int:accounting>
+      </int:intDocHeader>
+      <int:intDocDetail>
+        <int:intDocItem>
+          <int:text>${popis}</int:text>
+          <int:homeCurrency>
+            <typ:unitPrice>${castka}</typ:unitPrice>
+          </int:homeCurrency>
+          <int:accounting>
+            <int:ids>VBU</int:ids>
+            <int:accountingType>MD</int:accountingType>
+            <int:account>221</int:account>
+          </int:accounting>
+        </int:intDocItem>
+        <int:intDocItem>
+          <int:text>${popis}</int:text>
+          <int:homeCurrency>
+            <typ:unitPrice>${castka}</typ:unitPrice>
+          </int:homeCurrency>
+          <int:accounting>
+            <int:ids>VBU</int:ids>
+            <int:accountingType>D</int:accountingType>
+            <int:account>261</int:account>
+          </int:accounting>
+        </int:intDocItem>
+      </int:intDocDetail>
+    </int:intDoc>
+  </dat:dataPackItem>`;
 }
 
 /**
