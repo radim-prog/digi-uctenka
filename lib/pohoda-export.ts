@@ -55,21 +55,22 @@ function generateInvoiceXML(doklad: Doklad, dataId: number, datumZapisu: string)
           <typ:numberRequested>${doklad.cislo_dokladu}</typ:numberRequested>
         </inv:number>`;
 
-  // Variabilní symbol POUZE pro platby převodem (max 20 znaků)
-  if (doklad.forma_uhrady === 'prevod' && doklad.variabilni_symbol) {
-    const vs = doklad.variabilni_symbol.substring(0, 20); // Max 20 znaků pro Pohodu
+  // Variabilní symbol POUZE pro platby převodem (max 20 znaků, neprázdný)
+  // Pokud není VS, Pohoda ho vytvoří automaticky z čísla dokladu
+  if (doklad.forma_uhrady === 'prevod' && doklad.variabilni_symbol && doklad.variabilni_symbol.trim() !== '') {
+    const vs = doklad.variabilni_symbol.trim().substring(0, 20); // Max 20 znaků pro Pohodu
     xml += `
         <inv:symVar>${vs}</inv:symVar>`;
   }
 
-  if (doklad.konstantni_symbol) {
+  if (doklad.konstantni_symbol && doklad.konstantni_symbol.trim() !== '') {
     xml += `
-        <inv:symConst>${doklad.konstantni_symbol}</inv:symConst>`;
+        <inv:symConst>${doklad.konstantni_symbol.trim()}</inv:symConst>`;
   }
 
-  if (doklad.specificke_symbol) {
+  if (doklad.specificke_symbol && doklad.specificke_symbol.trim() !== '') {
     xml += `
-        <inv:symSpec>${doklad.specificke_symbol}</inv:symSpec>`;
+        <inv:symSpec>${doklad.specificke_symbol.trim()}</inv:symSpec>`;
   }
 
   xml += `
@@ -105,8 +106,10 @@ function generateInvoiceXML(doklad: Doklad, dataId: number, datumZapisu: string)
   }
 
   if (doklad.dodavatel_adresa) {
+    // Max 64 znaků pro Pohoda XML schéma
+    const adresa = doklad.dodavatel_adresa.substring(0, 64);
     xml += `
-            <typ:street>${doklad.dodavatel_adresa}</typ:street>`;
+            <typ:street>${adresa}</typ:street>`;
   }
 
   xml += `
