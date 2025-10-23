@@ -281,43 +281,68 @@ export default function OveritPage() {
               // Preferuj PDF preview pro JPG soubory (lepší zobrazení)
               const isPDF = doklad.imageMimeType === 'application/pdf';
               const hasPdfPreview = doklad.pdfPreviewUrl && doklad.pdfPreviewUrl.trim() !== '';
+              const hasOriginal = doklad.originalImageUrl && doklad.originalImageUrl.trim() !== '';
 
-              // Vyber URL pro zobrazení
+              // Vyber URL pro zobrazení (priorita: PDF preview → Originál → Base64)
               let imageUrl = '';
-              if (doklad.imageBase64) {
-                // Base64 (fallback)
-                imageUrl = `data:${doklad.imageMimeType || 'image/jpeg'};base64,${doklad.imageBase64}`;
-              } else if (hasPdfPreview && !isPDF) {
-                // JPG soubor s PDF preview - preferuj PDF preview
+              let displayAsPDF = false;
+
+              if (hasPdfPreview && !isPDF) {
+                // JPG soubor s PDF preview
                 imageUrl = doklad.pdfPreviewUrl;
-              } else if (doklad.originalImageUrl) {
-                // Originál (PDF nebo JPG bez preview)
+                displayAsPDF = true;
+                console.log('📄 Zobrazuji PDF preview:', imageUrl.substring(0, 50));
+              } else if (isPDF && hasOriginal) {
+                // PDF originál
                 imageUrl = doklad.originalImageUrl;
+                displayAsPDF = true;
+                console.log('📄 Zobrazuji PDF originál:', imageUrl.substring(0, 50));
+              } else if (hasOriginal) {
+                // JPG originál (bez PDF preview)
+                imageUrl = doklad.originalImageUrl;
+                displayAsPDF = false;
+                console.log('🖼️ Zobrazuji JPG originál:', imageUrl.substring(0, 50));
+              } else if (doklad.imageBase64) {
+                // Base64 fallback
+                imageUrl = `data:${doklad.imageMimeType || 'image/jpeg'};base64,${doklad.imageBase64}`;
+                displayAsPDF = isPDF;
+                console.log('📦 Zobrazuji Base64');
               }
 
               if (!imageUrl || imageUrl.trim() === '') {
+                console.error('❌ Žádný náhled k dispozici. Data:', {
+                  hasPdfPreview,
+                  hasOriginal,
+                  hasBase64: !!doklad.imageBase64,
+                  isPDF,
+                });
                 return (
                   <div className="w-full h-64 flex items-center justify-center">
                     <p className="text-gray-500">Náhled není k dispozici</p>
+                    <p className="text-xs text-gray-400 mt-2">
+                      Debug: {hasOriginal ? 'má original' : 'nemá original'},
+                      {hasPdfPreview ? ' má PDF preview' : ' nemá PDF preview'}
+                    </p>
                   </div>
                 );
               }
 
               // Určení, jestli zobrazit jako PDF nebo obrázek
-              let shouldShowAsPDF = isPDF || hasPdfPreview; // PDF nebo JPG s PDF preview
+              let shouldShowAsPDF = displayAsPDF;
 
               if (viewMode === 'pdf') {
                 shouldShowAsPDF = true; // Force PDF view
               } else if (viewMode === 'image') {
                 shouldShowAsPDF = false; // Force image view
               }
-              // viewMode === 'auto' používá default (isPDF || hasPdfPreview)
 
               return shouldShowAsPDF ? (
                 <iframe
                   src={imageUrl}
                   className="w-full h-full"
                   title="Doklad PDF"
+                  onLoad={() => console.log('✅ PDF iframe načten')}
+                  onError={(e) => console.error('❌ PDF iframe chyba:', e)}
                 />
               ) : (
                 <img
@@ -330,6 +355,8 @@ export default function OveritPage() {
                     imageOrientation: 'from-image',
                   }}
                   crossOrigin="anonymous"
+                  onLoad={() => console.log('✅ Obrázek načten')}
+                  onError={(e) => console.error('❌ Obrázek chyba:', e)}
                 />
               );
             })()}
