@@ -55,11 +55,12 @@ function generateInvoiceXML(doklad: Doklad, dataId: number, datumZapisu: string)
           <typ:numberRequested>${doklad.cislo_dokladu}</typ:numberRequested>
         </inv:number>`;
 
-  // Variabilní symbol - generujeme z čísla dokladu (jen číslice)
-  // Důvod: Pohoda se snaží auto-generovat VS když není uveden a selhává na nečíselných znacích
+  // Variabilní symbol - generujeme z čísla dokladu (pouze číslice)
+  // DŮVOD: Pohoda se pokouší auto-generovat VS když není uveden, ale selhává (error 108)
+  // ŘEŠENÍ: Posíláme VS explicitně pro VŠECHNY faktury
   const vs = doklad.cislo_dokladu
-    .replace(/\D/g, '')  // Odstraň všechny nečíselné znaky
-    .substring(0, 20);   // Max 20 znaků
+    .replace(/\D/g, '')  // Odstraň nečíselné znaky: "25.09.12/02" → "250912"
+    .substring(0, 20);   // Max 20 čísel podle Pohoda XSD
 
   if (vs.length > 0) {
     xml += `
