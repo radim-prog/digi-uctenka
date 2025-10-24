@@ -1,8 +1,10 @@
 # 📸 Digi-Účtenka v2.0
 
-**Aplikace pro digitalizaci a zpracování účetních dokladů pomocí Google Gemini AI**
+**Aplikace pro skenování a zpracování účtenek a faktur pomocí Google Gemini AI**
 
 Automaticky rozpozná text z PDF a obrázků, extrahuje data (dodavatel, částky, DPH, položky) a ukládá do Firebase. Podporuje hromadné zpracování, **100% funkční export do Pohoda XML** a správu více firem.
+
+> 🤖 **Pro AI asistenty:** Než začneš pracovat na projektu, přečti si [AI Instructions](./.github/AI_INSTRUCTIONS.md)
 
 ---
 
@@ -44,26 +46,15 @@ npm install
 ```
 
 ### 2. Konfigurace
-Zkopíruj `.env.local.example` na `.env.local` a doplň:
-```env
-# Firebase
-NEXT_PUBLIC_FIREBASE_API_KEY=...
-NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=...
-NEXT_PUBLIC_FIREBASE_PROJECT_ID=...
-NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET=...
+Zkopíruj `.env.local.example` na `.env.local` a doplň API klíče:
+- Firebase credentials
+- Anthropic API key
+- Google Service Account JSON
+- Google Sheet ID
 
-# Google Gemini AI
-GEMINI_API_KEY=...
-```
+**Podrobný návod najdeš v [README-SETUP.md](./README-SETUP.md)**
 
-**Podrobný návod: [README-SETUP.md](./README-SETUP.md)**
-
-### 3. Firebase Security Rules
-```bash
-firebase deploy --only storage,firestore
-```
-
-### 4. Spuštění
+### 3. Spuštění
 ```bash
 npm run dev
 ```
@@ -74,8 +65,7 @@ Aplikace poběží na [http://localhost:3000](http://localhost:3000)
 
 ## 🛠 Technologie
 
-- **Framework:** Next.js 14.2.33 + React + TypeScript
-- **Styling:** Tailwind CSS
+- **Frontend:** Next.js 14 + React + TypeScript + Tailwind CSS
 - **Authentication:** Firebase Authentication (Google Sign-in)
 - **Database:** Firebase Firestore
 - **AI Vision:** Google Gemini 2.5 Flash
@@ -90,38 +80,29 @@ Aplikace poběží na [http://localhost:3000](http://localhost:3000)
 ```
 digi-uctenka/
 ├── app/
-│   ├── (auth)/login/              # Přihlášení
-│   ├── (dashboard)/               # Hlavní aplikace
-│   │   ├── page.tsx               # Dashboard (seznam dokladů)
-│   │   ├── firmy/                 # Správa firem
-│   │   ├── nahrat/                # Nahrání dokladů (až 10 paralelně)
-│   │   ├── overit/[id]/           # Ověření a úprava dat
-│   │   ├── bankovni-vypisy/       # Zpracování bankovních výpisů
-│   │   └── archiv/                # Archiv dokladů po měsících
-│   ├── api/
-│   │   ├── ocr/                   # Gemini OCR endpoint
-│   │   ├── predkontace/           # AI předkontace
-│   │   ├── predkontace-batch/     # Hromadná předkontace
-│   │   ├── bank-statement/        # Zpracování výpisů
-│   │   └── pohoda-export/         # Export do Pohody XML
-│   └── layout.tsx
+│   ├── (auth)/login/          # Přihlášení
+│   ├── (dashboard)/           # Hlavní aplikace
+│   │   ├── page.tsx           # Dashboard (seznam dokladů)
+│   │   ├── firmy/             # Správa firem
+│   │   ├── nahrat/            # Nahrání nového dokladu
+│   │   └── overit/[id]/       # Verifikace dat
+│   ├── api/                   # API endpoints
+│   │   ├── ocr/               # Claude Vision OCR
+│   │   ├── upload-drive/      # Google Drive upload
+│   │   └── export-sheets/     # Export do Google Sheets
+│   └── layout.tsx             # Root layout
 ├── lib/
-│   ├── firebase.ts                # Firebase config
-│   ├── gemini-ocr.ts              # Gemini AI OCR logika
-│   ├── bank-statement-ocr.ts      # OCR pro bankovní výpisy
-│   ├── validation.ts              # Validace IČO, DIČ, dat
-│   ├── pohoda-export.ts           # XML export pro Pohodu
-│   ├── invoice-description.ts     # AI popis pro Pohodu
-│   ├── predkontace-ai.ts          # AI generování předkontací
-│   └── types.ts                   # TypeScript typy
+│   ├── firebase.ts            # Firebase config
+│   ├── claude-ocr.ts          # AI OCR logika
+│   ├── google-drive.ts        # Drive API
+│   ├── google-sheets.ts       # Sheets API
+│   ├── validation.ts          # Validace IČO, DIČ, atd.
+│   └── types.ts               # TypeScript typy
 ├── hooks/
-│   ├── useAuth.ts                 # Auth state
-│   ├── useFirmy.ts                # Firmy CRUD
-│   ├── useDoklady.ts              # Doklady CRUD
-│   └── useTransactions.ts         # Bankovní transakce
-├── storage.rules                  # Firebase Storage Security Rules
-├── firestore.rules                # Firestore Security Rules
-└── firestore.indexes.json         # Firestore indexy
+│   ├── useAuth.ts             # Auth state management
+│   ├── useFirmy.ts            # Firmy CRUD
+│   └── useDoklady.ts          # Doklady CRUD
+└── README-SETUP.md            # Detailní setup návod
 ```
 
 ---
@@ -129,81 +110,20 @@ digi-uctenka/
 ## 📝 Datový model
 
 ### Firma
-```typescript
-{
-  nazev: string;
-  ico: string;        // 8 číslic, s kontrolním součtem
-  dic: string;        // CZ + 8-10 číslic
-  adresa: string;
-  isActive: boolean;
-}
-```
+- Název, IČO, DIČ, Adresa
+- Multi-firma support (každý user může mít více firem)
 
 ### Doklad
-```typescript
-{
-  // Dodavatel (z OCR)
-  dodavatel_nazev: string;
-  dodavatel_ico: string;
-  dodavatel_dic: string;
-
-  // Základní údaje
-  typ_dokladu: 'faktura_prijata' | 'uctenka' | ...;
-  cislo_dokladu: string;
-  variabilni_symbol: string;
-  datum_vystaveni: string;      // YYYY-MM-DD
-  datum_zdanitelneho_plneni: string;
-  datum_splatnosti?: string;
-
-  // Částky
-  celkova_castka: number;
-  zaklad_dane_21?: number;
-  dph_21?: number;
-  zaklad_dane_12?: number;
-  dph_12?: number;
-  zaklad_dane_0?: number;
-
-  // Položky (pokud jsou na dokladu)
-  polozky?: Array<{
-    nazev: string;
-    mnozstvi: number;
-    jednotka: string;
-    sazba_dph: 21 | 12 | 0;
-    celkem_s_dph: number;
-  }>;
-
-  // Předkontace
-  predkontace_md?: string;     // Účet MD (má dáti)
-  predkontace_d?: string;      // Účet D (dal)
-
-  // Metadata
-  originalImageUrl: string;    // Firebase Storage URL
-  storagePath: string;
-  imageMimeType: string;
-  status: 'draft' | 'verified' | 'exported';
-  confidence: number;          // AI confidence score (0-1)
-}
-```
-
-### BankTransaction
-```typescript
-{
-  datum: string;
-  castka: number;              // Kladná = příchozí, záporná = odchozí
-  typ: 'incoming' | 'outgoing';
-  variabilni_symbol?: string;
-  nazev_protiuctu: string;
-  popis: string;
-  parovana_faktura_id?: string; // Auto-matching podle VS
-  status: 'draft' | 'matched' | 'exported';
-}
-```
+- **Odběratel:** Data z vybrané firmy
+- **Dodavatel:** AI extrakce z účtenky
+- **Základní údaje:** Číslo dokladu, VS, KS, SS, data
+- **Částky:** Celková částka, DPH 21%, 12%, 0%
+- **Metadata:** Link na Drive, export status, AI confidence
 
 ---
 
 ## 🎯 Workflow
 
-### Zpracování dokladů
 1. **Přihlášení** přes Google účet
 2. **Vytvoř firmu** (tvoje firma jako odběratel)
 3. **Nahraj účtenku** - vyfotíš nebo nahraješ obrázek (až 10 najednou)
@@ -216,25 +136,11 @@ digi-uctenka/
 
 ## 🔐 Bezpečnost
 
-### Firebase Security Rules
-```javascript
-// Firestore
-match /doklady/{dokladId} {
-  allow read, write: if request.auth.uid == resource.data.userId;
-}
-
-// Storage
-match /doklady/{firmaNazev}/{year}/{fileName} {
-  allow read, write: if request.auth != null;
-}
-```
-
-### Best Practices
-- ✅ Google Sign-in - žádná hesla ke správě
-- ✅ Environment variables pro API klíče
-- ✅ `.gitignore` pro ochranu secrets
-- ✅ Firebase Storage pro soubory (ne Firestore - 1 MB limit)
-- ✅ User-based isolation (každý vidí jen svoje data)
+- Firebase Security Rules - každý user vidí jen svoje data
+- Google Sign-in - žádná hesla ke správě
+- Service Account s omezeným přístupem (jen Drive a Sheets)
+- Environment variables pro všechny API klíče
+- `.gitignore` pro ochranu `.env.local`
 
 ---
 
@@ -262,8 +168,7 @@ match /doklady/{firmaNazev}/{year}/{fileName} {
 ## 🆘 Podpora
 
 - **Setup návod:** [README-SETUP.md](./README-SETUP.md)
-- **Issues:** [GitHub Issues](https://github.com/radim-prog/digi-uctenka/issues)
-- **Dokumentace:** Tento README + komentáře v kódu
+- **Issues:** [GitHub Issues](https://github.com/TVOJEMENO/digi-uctenka/issues)
 
 ---
 
@@ -273,4 +178,4 @@ MIT License - použij jak chceš!
 
 ---
 
-**Vytvořeno s ❤️ pomocí Claude Code a Google Gemini AI**
+**Vytvořeno s ❤️ pomocí Claude Code**
