@@ -85,7 +85,7 @@ export async function POST(request: NextRequest) {
     // Kontrola povinných polí a retry pokud chybí
     const missingFields: string[] = [];
     if (!extractedData.datum_vystaveni) missingFields.push('datum_vystaveni');
-    if (!extractedData.datum_zdanitelneho_plneni) missingFields.push('datum_zdanitelneho_plneni');
+    if (!extractedData.datum_duzp) missingFields.push('datum_duzp');
     if (!extractedData.cislo_dokladu || extractedData.cislo_dokladu === 'N/A') missingFields.push('cislo_dokladu');
     if (!extractedData.dodavatel_ico || extractedData.dodavatel_ico === '') missingFields.push('dodavatel_ico');
     if (!extractedData.dodavatel_dic || extractedData.dodavatel_dic === '') missingFields.push('dodavatel_dic');

@@ -64,7 +64,7 @@ export default function OveritPage() {
       const docSnap = await getDoc(docRef);
 
       if (docSnap.exists()) {
-        const data = { id: docSnap.id, ...docSnap.data() };
+        const data = { id: docSnap.id, ...docSnap.data() } as any;
         console.log('📄 Načtený doklad:', {
           id: data.id,
           imageMimeType: data.imageMimeType,
@@ -294,7 +294,7 @@ export default function OveritPage() {
                 />
               ) : (
                 <img
-                  src={imageUrl}
+                  src={`data:${doklad.imageMimeType};base64,${doklad.imageBase64}`}
                   alt="Doklad"
                   className="w-full h-auto"
                   style={{

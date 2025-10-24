@@ -1,9 +1,18 @@
 'use client';
 
 import { useState } from 'react';
-import jsPDF from 'jspdf';
-import JSZip from 'jszip';
-import heic2any from 'heic2any';
+import dynamic from 'next/dynamic';
+
+// Dynamic imports aby se nepoužívaly při SSR
+let jsPDF: any;
+let JSZip: any;
+let heic2any: any;
+
+if (typeof window !== 'undefined') {
+  jsPDF = require('jspdf').default || require('jspdf');
+  JSZip = require('jszip');
+  heic2any = require('heic2any').default || require('heic2any');
+}
 
 interface UploadedFile {
   file: File;
