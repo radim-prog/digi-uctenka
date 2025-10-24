@@ -1,6 +1,6 @@
 {
   "name": "digi-uctenka",
-  "version": "1.4.3",
+  "version": "2.0.0",
   "private": true,
   "scripts": {
     "dev": "next dev",
@@ -12,12 +12,14 @@
   "dependencies": {
     "@anthropic-ai/sdk": "^0.65.0",
     "@google/generative-ai": "^0.21.0",
+    "@types/jszip": "^3.4.0",
     "autoprefixer": "^10.4.19",
     "browser-image-compression": "^2.0.2",
     "firebase": "^10.12.2",
     "googleapis": "^134.0.0",
     "heic2any": "^0.0.4",
     "jspdf": "^3.0.3",
+    "jszip": "^3.10.1",
     "next": "^14.2.3",
     "pdfjs-dist": "^5.4.296",
     "postcss": "^8.4.38",

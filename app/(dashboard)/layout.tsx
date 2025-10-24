@@ -52,14 +52,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             <Link href="/firmy" className="text-gray-600 hover:text-gray-900">
               Firmy
             </Link>
-            <Link href="/bankovni-vypisy" className="text-gray-600 hover:text-gray-900">
-              Bankovní výpisy
+            <Link href="/konverze" className="text-gray-600 hover:text-gray-900">
+              Konverze JPG→PDF
             </Link>
-            {isAdmin && (
-              <Link href="/admin/users" className="text-purple-600 hover:text-purple-900 font-medium">
-                👥 Admin
-              </Link>
-            )}
             <Link href="/nahrat" className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700">
               + Nahrát doklad
             </Link>

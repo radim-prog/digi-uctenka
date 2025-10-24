@@ -64,7 +64,15 @@ export default function OveritPage() {
       const docSnap = await getDoc(docRef);
 
       if (docSnap.exists()) {
-        setDoklad({ id: docSnap.id, ...docSnap.data() });
+        const data = { id: docSnap.id, ...docSnap.data() };
+        console.log('📄 Načtený doklad:', {
+          id: data.id,
+          imageMimeType: data.imageMimeType,
+          hasImageBase64: !!data.imageBase64,
+          hasOriginalImageUrl: !!data.originalImageUrl,
+          originalImageUrl: data.originalImageUrl?.substring(0, 100),
+        });
+        setDoklad(data);
       }
     } catch (error) {
       console.error('Chyba při načítání:', error);
@@ -108,9 +116,9 @@ export default function OveritPage() {
       newErrors.datum_vystaveni = datumVystaveniVal.error!;
     }
 
-    const duzpVal = validateDatum(doklad.datum_zdanitelneho_plneni);
+    const duzpVal = validateDatum(doklad.datum_duzp);
     if (!duzpVal.valid) {
-      newErrors.datum_zdanitelneho_plneni = duzpVal.error!;
+      newErrors.datum_duzp = duzpVal.error!;
     }
 
     const castkaVal = validateCastka(doklad.celkova_castka);
@@ -277,35 +285,12 @@ export default function OveritPage() {
           </div>
 
           <div className="border rounded-lg overflow-auto bg-gray-50" style={{ height: 'calc(100% - 40px)' }}>
-            {(() => {
-              const imageUrl = doklad.imageBase64
-                ? `data:${doklad.imageMimeType || 'image/jpeg'};base64,${doklad.imageBase64}`
-                : doklad.originalImageUrl;
-
-              if (!imageUrl || imageUrl.trim() === '') {
-                return (
-                  <div className="w-full h-64 flex items-center justify-center">
-                    <p className="text-gray-500">Náhled není k dispozici</p>
-                  </div>
-                );
-              }
-
-              // Určení, jestli zobrazit jako PDF nebo obrázek
-              const isPDF = doklad.imageMimeType === 'application/pdf';
-              let shouldShowAsPDF = isPDF; // Default podle mime type
-
-              if (viewMode === 'pdf') {
-                shouldShowAsPDF = true; // Force PDF view
-              } else if (viewMode === 'image') {
-                shouldShowAsPDF = false; // Force image view
-              }
-              // viewMode === 'auto' používá default (isPDF)
-
-              return shouldShowAsPDF ? (
-                <iframe
-                  src={imageUrl}
+            {doklad.imageBase64 ? (
+              doklad.imageMimeType === 'application/pdf' ? (
+                <embed
+                  src={`data:application/pdf;base64,${doklad.imageBase64}`}
+                  type="application/pdf"
                   className="w-full h-full"
-                  title="Doklad PDF"
                 />
               ) : (
                 <img
@@ -318,8 +303,27 @@ export default function OveritPage() {
                     imageOrientation: 'from-image',
                   }}
                 />
-              );
-            })()}
+              )
+            ) : doklad.originalImageUrl && doklad.originalImageUrl.trim() !== '' ? (
+              doklad.imageMimeType === 'application/pdf' ? (
+                <embed
+                  src={doklad.originalImageUrl}
+                  type="application/pdf"
+                  className="w-full h-full"
+                />
+              ) : (
+                <img
+                  src={doklad.originalImageUrl}
+                  alt="Doklad"
+                  className="w-full h-auto"
+                  crossOrigin="anonymous"
+                />
+              )
+            ) : (
+              <div className="w-full h-64 flex items-center justify-center">
+                <p className="text-gray-500">Náhled není k dispozici</p>
+              </div>
+            )}
           </div>
         </div>
 
@@ -509,9 +513,9 @@ export default function OveritPage() {
                 <label className="block text-xs text-gray-600 mb-1">Datum zd.plnění *</label>
                 <input
                   type="date"
-                  value={doklad.datum_zdanitelneho_plneni}
-                  onChange={(e) => handleChange('datum_zdanitelneho_plneni', e.target.value)}
-                  className={`w-full px-2 py-1 text-sm border rounded ${errors.datum_zdanitelneho_plneni ? 'border-red-500' : ''}`}
+                  value={doklad.datum_duzp}
+                  onChange={(e) => handleChange('datum_duzp', e.target.value)}
+                  className={`w-full px-2 py-1 text-sm border rounded ${errors.datum_duzp ? 'border-red-500' : ''}`}
                 />
               </div>
 

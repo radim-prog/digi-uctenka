@@ -18,7 +18,7 @@ const AUTO_PAROVANI_261_NA_221 = false;
  * Podle formátu https://www.stormware.cz/pohoda/xml/
  */
 export function generatePohodaXML(doklady: Doklad[]): string {
-  const datum = new Date().toISOString();
+  const dnesniDatum = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
   const ico = doklady[0]?.odberatel_ico || '00000000';
 
   let xml = `<?xml version="1.0" encoding="UTF-8"?>
@@ -27,7 +27,7 @@ export function generatePohodaXML(doklady: Doklad[]): string {
   let itemId = 1;
   doklady.forEach((doklad) => {
     // Přidej fakturu/účtenku
-    xml += generateInvoiceXML(doklad, itemId++);
+    xml += generateInvoiceXML(doklad, itemId++, dnesniDatum);
 
     // Pokud je platba kartou (261 - peníze na cestě), automaticky přidej párování
     if (AUTO_PAROVANI_261_NA_221 && doklad.predkontace_d === '261') {
@@ -39,7 +39,7 @@ export function generatePohodaXML(doklady: Doklad[]): string {
   return xml;
 }
 
-function generateInvoiceXML(doklad: Doklad, dataId: number): string {
+function generateInvoiceXML(doklad: Doklad, dataId: number, datumZapisu: string): string {
   const sazbaDPHMapping = (sazba: number): string => {
     if (sazba === 21) return 'high';
     if (sazba === 12) return 'low';
@@ -53,35 +53,51 @@ function generateInvoiceXML(doklad: Doklad, dataId: number): string {
         <inv:invoiceType>receivedInvoice</inv:invoiceType>
         <inv:number>
           <typ:numberRequested>${doklad.cislo_dokladu}</typ:numberRequested>
-        </inv:number>
-        <inv:symVar>${doklad.variabilni_symbol}</inv:symVar>`;
+        </inv:number>`;
 
-  if (doklad.konstantni_symbol) {
+  // Variabilní symbol - generujeme z čísla dokladu (pouze číslice)
+  // DŮVOD: Pohoda se pokouší auto-generovat VS když není uveden, ale selhává (error 108)
+  // ŘEŠENÍ: Posíláme VS explicitně pro VŠECHNY faktury
+  const vs = doklad.cislo_dokladu
+    .replace(/\D/g, '')  // Odstraň nečíselné znaky: "25.09.12/02" → "250912"
+    .substring(0, 20);   // Max 20 čísel podle Pohoda XSD
+
+  if (vs.length > 0) {
     xml += `
-        <inv:symConst>${doklad.konstantni_symbol}</inv:symConst>`;
+        <inv:symVar>${vs}</inv:symVar>`;
   }
 
-  if (doklad.specificke_symbol) {
+  if (doklad.konstantni_symbol && doklad.konstantni_symbol.trim() !== '') {
     xml += `
-        <inv:symSpec>${doklad.specificke_symbol}</inv:symSpec>`;
+        <inv:symConst>${doklad.konstantni_symbol.trim()}</inv:symConst>`;
   }
+
+  if (doklad.specificke_symbol && doklad.specificke_symbol.trim() !== '') {
+    xml += `
+        <inv:symSpec>${doklad.specificke_symbol.trim()}</inv:symSpec>`;
+  }
+
+  // Pokud NEMÁME datum_splatnosti (hotovost/karta), použij datum_vystaveni
+  const datumProKHDPH = doklad.datum_splatnosti || doklad.datum_vystaveni;
 
   xml += `
-        <inv:date>${doklad.datum_vystaveni}</inv:date>
-        <inv:dateTax>${doklad.datum_zdanitelneho_plneni}</inv:dateTax>`;
-
-  if (doklad.datum_splatnosti) {
-    xml += `
-        <inv:dateDue>${doklad.datum_splatnosti}</inv:dateDue>`;
-  }
+        <inv:date>${datumZapisu}</inv:date>
+        <inv:dateTax>${datumZapisu}</inv:dateTax>
+        <inv:dateAccounting>${datumZapisu}</inv:dateAccounting>
+        <inv:dateDue>${datumProKHDPH}</inv:dateDue>
+        <inv:dateKHDPH>${datumProKHDPH}</inv:dateKHDPH>
+        <inv:dateApplicationVAT>${datumProKHDPH}</inv:dateApplicationVAT>`;
 
   // Vytvoř popisný text pro Pohodu
   const textPopis = generateInvoiceDescription(doklad);
 
   xml += `
         <inv:accounting>
-          <typ:ids>${doklad.predkontace || '2Fv'}</typ:ids>
+          <typ:accountingType>withoutAccounting</typ:accountingType>
         </inv:accounting>
+        <inv:classificationVAT>
+          <typ:classificationVATType>inland</typ:classificationVATType>
+        </inv:classificationVAT>
         <inv:text>${textPopis}</inv:text>
         <inv:partnerIdentity>
           <typ:address>
@@ -98,8 +114,10 @@ function generateInvoiceXML(doklad: Doklad, dataId: number): string {
   }
 
   if (doklad.dodavatel_adresa) {
+    // Max 64 znaků pro Pohoda XML schéma
+    const adresa = doklad.dodavatel_adresa.substring(0, 64);
     xml += `
-            <typ:street>${doklad.dodavatel_adresa}</typ:street>`;
+            <typ:street>${adresa}</typ:street>`;
   }
 
   xml += `
