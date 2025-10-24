@@ -1,19 +1,34 @@
-# 📸 Digi-Účtenka v1.0
+# 📸 Digi-Účtenka v2.0
 
 **Aplikace pro skenování a zpracování účtenek a faktur pomocí Google Gemini AI**
 
-Automaticky rozpozná text z PDF a obrázků, extrahuje data (dodavatel, částky, DPH, položky) a ukládá do Firebase. Podporuje hromadné zpracování, AI předkontaci a správu více firem.
+Automaticky rozpozná text z PDF a obrázků, extrahuje data (dodavatel, částky, DPH, položky) a ukládá do Firebase. Podporuje hromadné zpracování, **100% funkční export do Pohoda XML** a správu více firem.
 
 ---
 
-## ✨ Hlavní funkce verze 1.0
+## 🎉 Co je nového ve verzi 2.0
+
+**PLNĚ FUNKČNÍ POHODA XML EXPORT** - Všechny chyby vyřešeny:
+- ✅ Error 108 (symVar) - automatické generování variabilních symbolů
+- ✅ Error 603 (accounting) - správné accounting elementy
+- ✅ Error 103 (uzavřené DPH) - retroaktivní zápis faktur až 3 roky zpětně
+- ✅ Konzistentní terminologie (datum_duzp)
+- ✅ 100% úspěšnost importu do Pohody
+
+**📝 [Kompletní Release Notes](./RELEASE_NOTES_v2.0.md)**
+
+---
+
+## ✨ Hlavní funkce verze 2.0
 
 - 🤖 **AI OCR** - Google Gemini 2.5 Flash automaticky vytěží všechna data
 - 📄 **PDF až 25 MB** - Bez komprese, podporuje velké faktury
 - 📸 **Obrázky** - JPG, PNG s automatickou kompresí
 - 🔄 **Hromadné zpracování** - Až 10 souborů paralelně
 - ✅ **Ověření dat** - Manuální kontrola a oprava rozpoznaného textu
-- 🧮 **AI Předkontace** - Automatické generování účetní předkontace
+- 📤 **Pohoda XML Export** - 100% funkční export do účetního software Pohoda
+- 🔄 **Retroaktivní zápis** - Import faktur až 3 roky zpětně (§ 73 zákona o DPH)
+- 🧮 **AI Předkontace** - Automatické generování účetní předkontace (připraveno)
 - 💾 **Firebase Storage** - Zabezpečené ukládání originálních souborů
 - 🏢 **Multi-firma** - Podpora více firem/IČO
 - 🔐 **Zabezpečené** - Přihlášení přes Google, každý vidí jen svoje data
@@ -51,9 +66,9 @@ Aplikace poběží na [http://localhost:3000](http://localhost:3000)
 - **Frontend:** Next.js 14 + React + TypeScript + Tailwind CSS
 - **Authentication:** Firebase Authentication (Google Sign-in)
 - **Database:** Firebase Firestore
-- **AI Vision:** Claude API (Anthropic)
-- **Storage:** Google Drive API
-- **Export:** Google Sheets API
+- **AI Vision:** Google Gemini 2.5 Flash
+- **Storage:** Firebase Storage (5 GB zdarma)
+- **Export:** Pohoda XML v2.0 + Google Sheets API
 - **Hosting:** Vercel
 
 ---
@@ -109,11 +124,11 @@ digi-uctenka/
 
 1. **Přihlášení** přes Google účet
 2. **Vytvoř firmu** (tvoje firma jako odběratel)
-3. **Nahraj účtenku** - vyfotíš nebo nahraješ obrázek
-4. **AI zpracování** - Claude automaticky rozpozná text (5-15 sekund)
+3. **Nahraj účtenku** - vyfotíš nebo nahraješ obrázek (až 10 najednou)
+4. **AI zpracování** - Gemini automaticky rozpozná text (20-40 sekund)
 5. **Ověření** - zkontroluj a případně oprav data
-6. **Uložení** - data se uloží do Firestore a Google Sheets
-7. **Export** - z Google Sheets můžeš importovat do Pohody
+6. **Export do Pohody** - vygeneruj XML a importuj do Pohody (100% funkční!)
+7. **Zaúčtování** - potvrď zaúčtování a archivuj doklad
 
 ---
 
@@ -130,17 +145,21 @@ digi-uctenka/
 ## 💰 Náklady
 
 ### Vývoj/Testování (ZDARMA)
-- Firebase Spark Plan: 50K reads/day, 20K writes/day
-- Anthropic: $5 free credit (~1600 účtenek)
+- Firebase Spark Plan: 50K reads/day, 20K writes/day, 5 GB storage
+- Google Gemini: $0.075 za 1000 obrázků (velmi levné)
 - Vercel Hobby: Unlimited deployments
 - Google Workspace: Zdarma (Drive + Sheets)
 
 ### Produkce (běžné použití)
 - Firebase: Zůstane zdarma pro většinu use-casů
-- Anthropic: ~$3 za 1000 účtenek (pay-as-you-go)
+- Google Gemini: ~$0.05 za 100 dokladů, ~$0.50 za 1000 dokladů
 - Vercel: Zůstane zdarma (100 GB bandwidth/měsíc)
 
-**Celkové náklady: ~$3 za 1000 účtenek** (velmi levné!)
+**Celkové náklady:**
+- 100 dokladů/měsíc: ~$0.05 (5 Kč)
+- 1000 dokladů/měsíc: ~$0.50 (50 Kč)
+
+**Extrémně levné!**
 
 ---
 
