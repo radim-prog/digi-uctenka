@@ -83,14 +83,8 @@ function generateInvoiceXML(doklad: Doklad, dataId: number, datumZapisu: string)
   xml += `
         <inv:date>${datumZapisu}</inv:date>
         <inv:dateTax>${datumZapisu}</inv:dateTax>
-        <inv:dateAccounting>${datumZapisu}</inv:dateAccounting>`;
-
-  if (doklad.datum_splatnosti) {
-    xml += `
-        <inv:dateDue>${doklad.datum_splatnosti}</inv:dateDue>`;
-  }
-
-  xml += `
+        <inv:dateAccounting>${datumZapisu}</inv:dateAccounting>
+        <inv:dateDue>${datumProKHDPH}</inv:dateDue>
         <inv:dateKHDPH>${datumProKHDPH}</inv:dateKHDPH>
         <inv:dateApplicationVAT>${datumProKHDPH}</inv:dateApplicationVAT>`;
 
