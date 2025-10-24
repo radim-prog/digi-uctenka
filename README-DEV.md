@@ -22,7 +22,7 @@ Tato složka slouží pro vývoj nových funkcí a testování změn **BEZ RIZIK
 - ✅ v2.0 - Plně funkční Pohoda XML export
 - ✅ 100% funkční OCR (Gemini)
 - ✅ Všechny testy prošly
-- ✅ Branch: `v1.3-working`
+- ✅ Branch: `main`
 - ✅ Tag: `v2.0`
 
 ### Co budeme vyvíjet v DEV verzi:
@@ -57,8 +57,8 @@ git pull origin development
 
 # 2. V PROD složce - merge z development
 cd ~/Projects/digi-uctenka-prod
-git checkout v1.3-working
-git pull origin v1.3-working
+git checkout main
+git pull origin main
 git merge development -m "✨ Nová funkce z development"
 
 # 3. Testuj v PROD složce
@@ -66,7 +66,7 @@ npm run dev
 # ... testování ...
 
 # 4. Pokud OK → push a vytvoř nový tag
-git push origin v1.3-working
+git push origin main
 git tag v2.1
 git push origin v2.1
 ```
@@ -111,7 +111,7 @@ Pokud chceš oddělit data:
 
 ### ❌ DON'T:
 - NIKDY neměnit soubory v `digi-uctenka-prod/` přímo
-- NIKDY nepushnout nefunkční kód do `v1.3-working` branch
+- NIKDY nepushnout nefunkční kód do `main` branch
 - NIKDY nemazat nebo nepřepisovat tagy (v2.0)
 - NIKDY nemigrovat data mezi DEV a PROD databázemi bez zálohy
 
@@ -136,7 +136,7 @@ git reset --hard <commit-hash>
 ```bash
 cd ~/Projects/digi-uctenka-dev
 git checkout development
-git merge v1.3-working
+git merge main
 ```
 
 ### Rozbil jsem DEV úplně:
