@@ -9,7 +9,7 @@
 ```
 ~/Projects/
 ├── digi-uctenka-prod/     # ✅ PRODUKČNÍ verze (v2.0+) - NEŠAHAT!
-│   ├── Branch: v1.3-working
+│   ├── Branch: main
 │   ├── Tags: v2.0, v2.1, ...
 │   └── Port: 4000
 └── digi-uctenka-dev/      # 🚧 DEVELOPMENT verze - pro vývoj
@@ -23,7 +23,7 @@
 
 ### ❌ NIKDY NEMĚNIT:
 1. **Soubory v `digi-uctenka-prod/`** - toto je PRODUKČNÍ verze!
-2. **Branch `v1.3-working`** - pouze pro hotové, otestované funkce
+2. **Branch `main`** - pouze pro hotové, otestované funkce
 3. **Tagy `v2.0`, `v2.1`, ...** - nepřepisovat, nesmazat!
 4. **Hlavní soubory**:
    - `lib/pohoda-export.ts` - 100% funkční Pohoda XML export
@@ -70,8 +70,8 @@ PORT=4001 npm run dev
 ```bash
 # 1. Přepni se do PROD
 cd ~/Projects/digi-uctenka-prod
-git checkout v1.3-working
-git pull origin v1.3-working
+git checkout main
+git pull origin main
 
 # 2. Merge z development
 git merge development -m "✨ Popis nové funkce"
@@ -82,7 +82,7 @@ PORT=4000 npm run dev
 # → Otestuj VŠECHNO znovu!
 
 # 4. Pokud vše funguje → push a nový tag
-git push origin v1.3-working
+git push origin main
 git tag v2.X
 git push origin v2.X
 ```
@@ -183,10 +183,10 @@ git add .
 git commit -m "změna"
 ```
 
-### 2. Force push do v1.3-working
+### 2. Force push do main
 ```bash
 # ❌ ŠPATNĚ:
-git push -f origin v1.3-working
+git push -f origin main
 ```
 
 ### 3. Mazání/přepisování tagů
@@ -273,7 +273,7 @@ git push -f origin development  # OK v DEV!
 ### Omylem změnil v PROD
 ```bash
 cd ~/Projects/digi-uctenka-prod
-git reset --hard origin/v1.3-working
+git reset --hard origin/main
 # POZOR: Ztratíš všechny lokální změny!
 ```
 
@@ -319,8 +319,8 @@ git log --oneline -10
 
 ### Vercel deployment:
 - URL: https://digi-uctenka.vercel.app
-- Auto-deploy z branch: `v1.3-working`
-- Push do `v1.3-working` → automaticky deployne
+- Auto-deploy z branch: `main`
+- Push do `main` → automaticky deployne
 
 ---
 
@@ -338,7 +338,7 @@ git log --oneline -10
 2. ✅ **Branch: `development`**
 3. ✅ **Port 4001 pro DEV**
 4. ❌ **NIKDY neměnit PROD (`digi-uctenka-prod/`)**
-5. ❌ **NIKDY force push do `v1.3-working`**
+5. ❌ **NIKDY force push do `main`**
 6. ❌ **NIKDY smazat tagy**
 7. ✅ **Testuj PŘED merge do PROD**
 8. ✅ **Nový tag při každém merge do PROD**
