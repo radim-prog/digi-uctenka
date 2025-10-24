@@ -4,6 +4,8 @@
 
 Automaticky rozpozná text z PDF a obrázků, extrahuje data (dodavatel, částky, DPH, položky) a ukládá do Firebase. Podporuje hromadné zpracování, **100% funkční export do Pohoda XML** a správu více firem.
 
+> 🤖 **Pro AI asistenty:** Než začneš pracovat na projektu, přečti si [AI Instructions](./.github/AI_INSTRUCTIONS.md)
+
 ---
 
 ## 🎉 Co je nového ve verzi 2.0
