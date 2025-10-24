@@ -141,7 +141,7 @@
   cislo_dokladu: string;
   variabilni_symbol: string;
   datum_vystaveni: string; // YYYY-MM-DD
-  datum_zdanitelneho_plneni: string; // DUZP
+  datum_duzp: string; // Datum zdanitelného plnění (DUZP)
   datum_splatnosti?: string;
 
   // Částky

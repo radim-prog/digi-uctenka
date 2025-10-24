@@ -64,7 +64,15 @@ export default function OveritPage() {
       const docSnap = await getDoc(docRef);
 
       if (docSnap.exists()) {
-        setDoklad({ id: docSnap.id, ...docSnap.data() });
+        const data = { id: docSnap.id, ...docSnap.data() };
+        console.log('📄 Načtený doklad:', {
+          id: data.id,
+          imageMimeType: data.imageMimeType,
+          hasImageBase64: !!data.imageBase64,
+          hasOriginalImageUrl: !!data.originalImageUrl,
+          originalImageUrl: data.originalImageUrl?.substring(0, 100),
+        });
+        setDoklad(data);
       }
     } catch (error) {
       console.error('Chyba při načítání:', error);
@@ -108,9 +116,9 @@ export default function OveritPage() {
       newErrors.datum_vystaveni = datumVystaveniVal.error!;
     }
 
-    const duzpVal = validateDatum(doklad.datum_zdanitelneho_plneni);
+    const duzpVal = validateDatum(doklad.datum_duzp);
     if (!duzpVal.valid) {
-      newErrors.datum_zdanitelneho_plneni = duzpVal.error!;
+      newErrors.datum_duzp = duzpVal.error!;
     }
 
     const castkaVal = validateCastka(doklad.celkova_castka);
@@ -277,72 +285,12 @@ export default function OveritPage() {
           </div>
 
           <div className="border rounded-lg overflow-auto bg-gray-50" style={{ height: 'calc(100% - 40px)' }}>
-            {(() => {
-              // Preferuj PDF preview pro JPG soubory (lepší zobrazení)
-              const isPDF = doklad.imageMimeType === 'application/pdf';
-              const hasPdfPreview = doklad.pdfPreviewUrl && doklad.pdfPreviewUrl.trim() !== '';
-              const hasOriginal = doklad.originalImageUrl && doklad.originalImageUrl.trim() !== '';
-
-              // Vyber URL pro zobrazení (priorita: PDF preview → Originál → Base64)
-              let imageUrl = '';
-              let displayAsPDF = false;
-
-              if (hasPdfPreview && !isPDF) {
-                // JPG soubor s PDF preview
-                imageUrl = doklad.pdfPreviewUrl;
-                displayAsPDF = true;
-                console.log('📄 Zobrazuji PDF preview:', imageUrl.substring(0, 50));
-              } else if (isPDF && hasOriginal) {
-                // PDF originál
-                imageUrl = doklad.originalImageUrl;
-                displayAsPDF = true;
-                console.log('📄 Zobrazuji PDF originál:', imageUrl.substring(0, 50));
-              } else if (hasOriginal) {
-                // JPG originál (bez PDF preview)
-                imageUrl = doklad.originalImageUrl;
-                displayAsPDF = false;
-                console.log('🖼️ Zobrazuji JPG originál:', imageUrl.substring(0, 50));
-              } else if (doklad.imageBase64) {
-                // Base64 fallback
-                imageUrl = `data:${doklad.imageMimeType || 'image/jpeg'};base64,${doklad.imageBase64}`;
-                displayAsPDF = isPDF;
-                console.log('📦 Zobrazuji Base64');
-              }
-
-              if (!imageUrl || imageUrl.trim() === '') {
-                console.error('❌ Žádný náhled k dispozici. Data:', {
-                  hasPdfPreview,
-                  hasOriginal,
-                  hasBase64: !!doklad.imageBase64,
-                  isPDF,
-                });
-                return (
-                  <div className="w-full h-64 flex items-center justify-center">
-                    <p className="text-gray-500">Náhled není k dispozici</p>
-                    <p className="text-xs text-gray-400 mt-2">
-                      Debug: {hasOriginal ? 'má original' : 'nemá original'},
-                      {hasPdfPreview ? ' má PDF preview' : ' nemá PDF preview'}
-                    </p>
-                  </div>
-                );
-              }
-
-              // Určení, jestli zobrazit jako PDF nebo obrázek
-              let shouldShowAsPDF = displayAsPDF;
-
-              if (viewMode === 'pdf') {
-                shouldShowAsPDF = true; // Force PDF view
-              } else if (viewMode === 'image') {
-                shouldShowAsPDF = false; // Force image view
-              }
-
-              return shouldShowAsPDF ? (
-                <iframe
-                  src={imageUrl}
+            {doklad.imageBase64 ? (
+              doklad.imageMimeType === 'application/pdf' ? (
+                <embed
+                  src={`data:application/pdf;base64,${doklad.imageBase64}`}
+                  type="application/pdf"
                   className="w-full h-full"
-                  title="Doklad PDF"
-                  onLoad={() => console.log('✅ PDF iframe načten')}
-                  onError={(e) => console.error('❌ PDF iframe chyba:', e)}
                 />
               ) : (
                 <img
@@ -358,8 +306,27 @@ export default function OveritPage() {
                   onLoad={() => console.log('✅ Obrázek načten')}
                   onError={(e) => console.error('❌ Obrázek chyba:', e)}
                 />
-              );
-            })()}
+              )
+            ) : doklad.originalImageUrl && doklad.originalImageUrl.trim() !== '' ? (
+              doklad.imageMimeType === 'application/pdf' ? (
+                <embed
+                  src={doklad.originalImageUrl}
+                  type="application/pdf"
+                  className="w-full h-full"
+                />
+              ) : (
+                <img
+                  src={doklad.originalImageUrl}
+                  alt="Doklad"
+                  className="w-full h-auto"
+                  crossOrigin="anonymous"
+                />
+              )
+            ) : (
+              <div className="w-full h-64 flex items-center justify-center">
+                <p className="text-gray-500">Náhled není k dispozici</p>
+              </div>
+            )}
           </div>
         </div>
 
@@ -549,9 +516,9 @@ export default function OveritPage() {
                 <label className="block text-xs text-gray-600 mb-1">Datum zd.plnění *</label>
                 <input
                   type="date"
-                  value={doklad.datum_zdanitelneho_plneni}
-                  onChange={(e) => handleChange('datum_zdanitelneho_plneni', e.target.value)}
-                  className={`w-full px-2 py-1 text-sm border rounded ${errors.datum_zdanitelneho_plneni ? 'border-red-500' : ''}`}
+                  value={doklad.datum_duzp}
+                  onChange={(e) => handleChange('datum_duzp', e.target.value)}
+                  className={`w-full px-2 py-1 text-sm border rounded ${errors.datum_duzp ? 'border-red-500' : ''}`}
                 />
               </div>
 

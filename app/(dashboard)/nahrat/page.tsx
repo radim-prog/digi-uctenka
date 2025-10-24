@@ -240,23 +240,20 @@ export default function NahratPage() {
 
       updateFileProgress(index, { progress: 'Ukládám soubor...' });
 
-      // Upload do Firebase Storage
-      // Sanitizuj filename - odstraň nebezpečné znaky (/, \, :, atd.)
+      // Sanitizuj cislo_dokladu a firmaNazev - odstraň nebezpečné znaky pro Storage path
       const safeCisloDokladu = extractedData.cislo_dokladu
         .replace(/[\/\\:*?"<>|]/g, '_')  // Nahraď nebezpečné znaky
         .substring(0, 50);  // Max 50 znaků
 
-      // Sanitizuj název firmy (mezery, s.r.o., a.s., atd.)
       const safeFirmaNazev = activeFirma!.nazev
         .replace(/[\/\\:*?"<>|]/g, '_')
         .replace(/\s+/g, '_')  // Nahraď mezery za _
         .replace(/\./g, '_');  // Nahraď tečky za _
 
+      // Upload do Firebase Storage
       const fileName = `${extractedData.datum_vystaveni}_${safeCisloDokladu}.${isPDF ? 'pdf' : 'jpg'}`;
       const year = new Date(extractedData.datum_vystaveni).getFullYear().toString();
       const storagePath = `doklady/${safeFirmaNazev}/${year}/${fileName}`;
-
-      console.log('📁 Storage path:', storagePath);
 
       let downloadURL = '';
       let pdfPreviewURL = '';
@@ -357,7 +354,7 @@ export default function NahratPage() {
           cislo_dokladu: '',
           variabilni_symbol: '',
           datum_vystaveni: datumDnes,
-          datum_zdanitelneho_plneni: datumDnes,
+          datum_duzp: datumDnes,
           celkova_castka: 0,
           mena: 'CZK',
           typ_dokladu: 'uctenka',
